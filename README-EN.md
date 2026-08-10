@@ -2,6 +2,10 @@
 
 Connect web pages with local programs.
 
+### 让我们说中文
+[README.md](https://github.com/HXZXS/Better-JavaScript/blob/main/README-EN.md)
+
+
 ---
 
 ## What is this for?
