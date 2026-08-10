@@ -1,4 +1,4 @@
-# Better JavaScript
+## Better JavaScript
 
 ### 重新定义JavaScript的边界
   
