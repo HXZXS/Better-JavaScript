@@ -4,7 +4,7 @@
 
 ### Let's speak English
 
-[README-EN.md](https://github.com/HXZXS/Better-JavaScript/README-EN.md) 
+[README-EN.md](https://github.com/HXZXS/Better-JavaScript/blob/main/README-EN.md)
 
 ---
 
