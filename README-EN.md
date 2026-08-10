@@ -1,4 +1,3 @@
-```markdown
 # BJS Data Relay
 
 Connect web pages with local programs.
@@ -7,18 +6,18 @@ Connect web pages with local programs.
 
 ## What is this for?
 
-Browsers run web pages, but they cannot directly access local files, show system dialogs, or run local programs by default.
+Web pages run in browsers and, by default, cannot access local files, show system dialogs, or launch programs.
 
-BJS Data Relay solves this. It runs an HTTP service on the local machine. Web pages send requests, the service executes the corresponding local operations, and returns results to the web pages.
+BJS Data Relay solves this problem. It runs an HTTP service on the local computer. The web page sends requests, the service executes the corresponding local operations, and then returns the results to the web page.
 
 So you can:
 
 - Open a folder on your computer from a web page
-- Show a real system window from a web page
-- Launch programs installed on your computer from a web page
-- Browse, create, delete, copy, and move files using a web page
-- Parse Lanzou cloud sharing links and download files from a web page
-- ...and more
+- Show a real system dialog from a web page
+- Launch programs on your computer from a web page
+- Browse, create, delete, copy, and move files from a web page
+- Parse Lanzou cloud links and download files from a web page
+- ......
 
 ---
 
@@ -26,22 +25,22 @@ So you can:
 
 ### Download
 
-Go to the [Releases](https://github.com/HXZXS/Better-JavaScript/releases) page and download the latest `bjs_relay.exe`. You can also run the Python source directly (see instructions below).
+Go to the [Releases](https://github.com/HXZXS/Better-JavaScript/releases) page and download the latest `bjs_relay.exe`. You can also run the Python source code directly; see the instructions below.
 
 ### Run
 
-Double-click `bjs_relay.exe`, follow the installation steps, and wait for the program to start.
-By default it listens on `127.0.0.1:8765`. Visit `http://127.0.0.1:8765/health` in your browser – if you see `{"code":0,"status":"running"}`, everything is working.
+Double-click `bjs_relay.exe` to install and wait for the program to start.
+It listens on `127.0.0.1:8765` by default. Visit `http://127.0.0.1:8765/health` in your browser and see `{"code":0,"status":"running"}` – everything is working.
 
-### Files Created
+### Files generated
 
-The following files and directories will be created in the program's folder:
+The following files and directories will be created in the program's directory:
 
 | File/Directory | Description |
 |----------------|-------------|
-| `bjs.log` | Runtime log – check this first if something goes wrong |
-| `logo.ico` | Tray icon; replace with your own, otherwise the default icon is used |
-| `downloads/` | Default folder for files downloaded from Lanzou |
+| `bjs.log` | Runtime log; check here first if something goes wrong |
+| `logo.ico` | Tray icon; replace with your own, otherwise the default icon is shown |
+| `downloads/` | Default directory for files downloaded from Lanzou |
 
 ---
 
@@ -57,7 +56,7 @@ All endpoints return a consistent response format:
 }
 ```
 
-`code` is `0` on success, `-1` on failure. The actual response content varies per endpoint – see each endpoint's description.
+`code` = `0` means success, `-1` means failure. See each endpoint's description for specific return contents.
 
 ### Health Check
 
@@ -65,7 +64,7 @@ All endpoints return a consistent response format:
 GET /health
 ```
 
-Check if the service is running.
+Check whether the service is running properly.
 
 ```bash
 curl http://127.0.0.1:8765/health
@@ -99,12 +98,12 @@ Display a message window locally.
 |-----------|------|----------|-------------|
 | text | string | Yes | The text to display |
 | title | string | No | Window title, default "From Web" |
-| type | string | No | See below, default `info` |
+| type | string | No | See below, default info |
 | image | string | No | Image URL or local path |
 | width | int | No | Window width in image mode |
 | height | int | No | Window height in image mode |
 
-Valid `type` values:
+`type` options:
 
 - `info` — information
 - `warning` — warning
@@ -131,8 +130,8 @@ Launch a local program.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | path | string | Yes | Program path |
-| args | string | No | Command-line arguments, space-separated |
-| wait | bool | No | Whether to wait for the program to exit, default `false` |
+| args | string | No | Command‑line arguments, space‑separated |
+| wait | bool | No | Whether to wait for the program to finish, default false |
 
 ```bash
 curl -X POST http://127.0.0.1:8765/api/run \
@@ -140,7 +139,7 @@ curl -X POST http://127.0.0.1:8765/api/run \
   -d '{"path":"notepad.exe","args":"readme.txt"}'
 ```
 
-When `wait` is `true`, the response includes the program's output:
+When `wait` is set to `true`, the response includes the program's output:
 
 ```json
 {
@@ -160,11 +159,11 @@ When `wait` is `true`, the response includes the program's output:
 POST /api/dialog
 ```
 
-Create a dialog with multiple controls using JSON configuration – suitable for collecting user input.
+Configure a dialog with various controls using JSON – suitable for collecting user input.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| config | string | Yes | JSON string describing the dialog layout |
+| config | string | Yes | JSON configuration for the dialog |
 
 **Configuration format:**
 
@@ -175,7 +174,7 @@ Create a dialog with multiple controls using JSON configuration – suitable for
   "height": 400,
   "controls": [
     {"type": "label", "text": "A line of description"},
-    {"type": "entry", "label": "Name", "id": "name", "default": "John Doe"},
+    {"type": "entry", "label": "Name", "id": "name", "default": "Zhang San"},
     {"type": "combobox", "label": "Gender", "id": "gender", "options": ["Male", "Female"]},
     {"type": "checkbox", "label": "Interests", "id": "hobby", "options": ["Reading", "Music"], "default": ["Reading"]},
     {"type": "radio", "label": "Level", "id": "level", "options": ["Beginner", "Intermediate", "Advanced"]},
@@ -192,12 +191,12 @@ Create a dialog with multiple controls using JSON configuration – suitable for
 | type | Description |
 |------|-------------|
 | `label` | Plain text, display only |
-| `entry` | Single-line input |
-| `text` | Multi-line text input |
+| `entry` | Single‑line input |
+| `text` | Multi‑line text input |
 | `password` | Password input |
-| `combobox` | Drop-down selection |
-| `checkbox` | Multiple-choice checkboxes |
-| `radio` | Radio buttons (single choice) |
+| `combobox` | Drop‑down selection |
+| `checkbox` | Multiple‑choice checkboxes |
+| `radio` | Radio buttons |
 | `progress` | Progress bar |
 | `image` | Display an image |
 
@@ -209,7 +208,7 @@ curl -X POST http://127.0.0.1:8765/api/dialog \
   -d '{"config":"{\"title\":\"Edit Info\",\"controls\":[{\"type\":\"entry\",\"label\":\"Name\",\"id\":\"name\"}],\"buttons\":[\"Save\"]}"}'
 ```
 
-The response includes the button clicked and the values entered:
+The response includes the user's action and entered values:
 
 ```json
 {
@@ -217,7 +216,7 @@ The response includes the button clicked and the values entered:
   "msg": "ok",
   "data": {
     "button": "Save",
-    "values": {"name": "Jane", "gender": "Female"}
+    "values": {"name": "Li Si", "gender": "Male"}
   }
 }
 ```
@@ -255,7 +254,7 @@ Example response:
 GET /api/readfile?path={path}
 ```
 
-Automatically detects UTF-8 and GBK encoding.
+Automatically detects UTF‑8 and GBK encoding.
 
 ```bash
 curl "http://127.0.0.1:8765/api/readfile?path=C:\\readme.txt"
@@ -269,7 +268,7 @@ POST /api/mkdir
 
 | Parameter | Description |
 |-----------|-------------|
-| path | Directory path to create |
+| path | Path of the directory to create |
 
 ```bash
 curl -X POST http://127.0.0.1:8765/api/mkdir \
@@ -285,8 +284,8 @@ POST /api/delete
 
 | Parameter | Description |
 |-----------|-------------|
-| path | File or directory path to delete |
-| recursive | Whether to delete directory contents recursively |
+| path | Path of the file or directory to delete |
+| recursive | Whether to delete contents recursively when deleting a directory |
 
 ```bash
 curl -X POST http://127.0.0.1:8765/api/delete \
@@ -342,7 +341,7 @@ Parse a Lanzou sharing link and download the file.
 |-----------|------|----------|-------------|
 | url | string | Yes | Lanzou sharing link |
 | pwd | string | No | Extraction password; leave empty if none |
-| save_path | string | No | Save path; defaults to `downloads/` directory |
+| save_path | string | No | Save path; if not provided, saves to the downloads/ directory |
 
 ```bash
 curl -X POST http://127.0.0.1:8765/api/lanzou/download \
@@ -358,7 +357,7 @@ curl -X POST http://127.0.0.1:8765/api/lanzou/download \
 GET /api/sysinfo
 ```
 
-Returns OS version, CPU cores, memory size, etc. If `psutil` is not installed, only basic system name is returned.
+Returns operating system version, CPU core count, memory size, etc. If the `psutil` library is not installed, only basic OS name is returned.
 
 ```bash
 curl http://127.0.0.1:8765/api/sysinfo
@@ -372,7 +371,7 @@ curl http://127.0.0.1:8765/api/sysinfo
 GET /api/log?lines={lines}
 ```
 
-Get the last N lines of logs – default 100 lines.
+Get the most recent N lines of logs; default is 100 lines.
 
 ```bash
 curl "http://127.0.0.1:8765/api/log?lines=50"
@@ -380,18 +379,20 @@ curl "http://127.0.0.1:8765/api/log?lines=50"
 
 ---
 
-## Included Frontend Pages
+## Companion Frontend Pages
 
-The project includes two HTML pages in the `web/` directory – open them directly in your browser:
+The project includes two HTML pages – open them in a browser and use them directly:
 
-- **Console** – Interface for all features, handy for testing
-- **Developer Documentation** – API documentation with online testing tools
+- **Console** — an interface for all functions, convenient for testing
+- **Developer Documentation** — API documentation with online testing tools
+
+These pages are located in the `web/` directory. Open them directly with your browser.
 
 ---
 
 ## Running from Source
 
-If you prefer not to use the executable, run the Python script directly:
+If you prefer not to use the .exe, run the Python script directly:
 
 ```bash
 # Install dependencies
@@ -401,15 +402,15 @@ pip install flask flask-cors pystray pillow
 python bjs_relay.py
 ```
 
-If you use the executable, use the pre-built package or package it manually.
+If using the .exe, use the pre‑built package or package it manually.
 
 ---
 
-## Security Notes
+## About Security
 
-The service binds only to `127.0.0.1` by default, so only the local machine can access it – this is the recommended configuration.
+The service listens only on `127.0.0.1` by default, meaning only the local machine can access it. This enhances security.
 
-If you change the bind address or expose the service via tunneling tools, consider adding an authentication layer in front.
+If you change the binding address yourself, or expose the service via tools like ngrok, consider adding an authentication layer in front.
 
 ---
 
