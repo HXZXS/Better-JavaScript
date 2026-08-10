@@ -1,10 +1,4 @@
-## Better JavaScript
-
-### 重新定义JavaScript的边界
-  
-  
-  
----
+# Better JavaScript
 ### 正在进行项目
 # Data Relay
 
