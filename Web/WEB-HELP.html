@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJS 数据接力 · 开发文档</title>
+    <style>
+        body { font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; background: #e8ecf0; color: #222; padding: 20px; margin: 0; line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 30px 35px; border: 1px solid #aaa; box-shadow: 4px 4px 12px rgba(0,0,0,0.08); }
+        h1 { font-size: 28px; border-bottom: 2px solid #2b6f9e; padding-bottom: 10px; margin-bottom: 14px; }
+        h1 small { font-size: 16px; font-weight: 400; color: #555; margin-left: 14px; }
+        h2 { font-size: 21px; margin-top: 28px; margin-bottom: 10px; border-left: 4px solid #2b6f9e; padding-left: 12px; }
+        h3 { font-size: 17px; margin-top: 16px; margin-bottom: 6px; color: #333; }
+        p { color: #444; margin-bottom: 8px; }
+        .badge { display: inline-block; padding: 1px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #2b6f9e; color: #fff; margin-right: 4px; border: 1px solid #1a4a6e; }
+        .badge.get { background: #2980b9; border-color: #1a5276; }
+        .badge.post { background: #27ae60; border-color: #1a7a42; }
+        .badge.delete { background: #c0392b; border-color: #922b21; }
+        .api-card { background: #f7f9fa; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #ccc; }
+        .api-card .api-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .api-card .api-head .method { font-weight: 700; font-size: 13px; padding: 1px 14px; border-radius: 4px; color: #fff; border: 1px solid #555; }
+        .api-card .api-head .method.get { background: #2980b9; border-color: #1a5276; }
+        .api-card .api-head .method.post { background: #27ae60; border-color: #1a7a42; }
+        .api-card .api-head .method.delete { background: #c0392b; border-color: #922b21; }
+        .api-card .api-head .endpoint { font-family: "Consolas", monospace; font-size: 15px; color: #222; }
+        .api-card .api-desc { font-size: 14px; color: #444; margin-bottom: 6px; }
+        .api-card .params { background: #eef1f4; padding: 6px 12px; border: 1px solid #ddd; font-size: 14px; margin: 4px 0; }
+        .api-card .params code { background: transparent; }
+        .api-card .example { background: #1a2a3e; color: #e8edf4; padding: 8px 12px; border: 1px solid #0a1a2e; font-family: "Consolas", monospace; font-size: 13px; overflow-x: auto; margin: 4px 0; }
+        .api-card .test-section { margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .api-card .test-section .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+        .api-card .test-section .row label { min-width: 60px; font-weight: 500; font-size: 13px; color: #444; }
+        .api-card .test-section .row input, .api-card .test-section .row textarea, .api-card .test-section .row select { flex: 1; min-width: 120px; padding: 5px 8px; border: 1px solid #aaa; border-radius: 2px; font-size: 13px; background: #fff; }
+        .api-card .test-section .row textarea { min-height: 36px; font-family: "Consolas", monospace; }
+        .btn { padding: 5px 16px; border: 1px solid #555; border-radius: 3px; font-size: 14px; font-weight: 600; cursor: pointer; background: #2b6f9e; color: #fff; }
+        .btn:hover { background: #1f5a83; }
+        .btn-success { background: #27ae60; border-color: #1a7a42; }
+        .btn-success:hover { background: #1e8449; }
+        .btn-outline { background: transparent; border: 1px solid #aaa; color: #222; }
+        .btn-outline:hover { background: #eef1f4; }
+        .result-box { margin-top: 6px; padding: 8px 10px; background: #fff; border: 1px solid #ccc; border-left: 4px solid #2b6f9e; font-family: "Consolas", monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; max-height: 170px; overflow-y: auto; }
+        .protocol-tester { background: #f7f9fa; padding: 14px 18px; border: 1px solid #ccc; margin-top: 10px; }
+        .protocol-tester .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .protocol-tester .row input { flex: 1; min-width: 200px; padding: 6px 10px; border: 1px solid #aaa; border-radius: 2px; font-family: "Consolas", monospace; font-size: 14px; }
+        .footer { margin-top: 28px; text-align: center; font-size: 14px; color: #666; border-top: 1px solid #ccc; padding-top: 18px; }
+        code { background: #eef1f4; padding: 1px 6px; border-radius: 2px; font-size: 13px; border: 1px solid #ddd; }
+        @media (max-width: 700px) { .container { padding: 16px; } .api-card .test-section .row { flex-direction: column; align-items: stretch; } .api-card .test-section .row label { min-width: auto; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>BJS 数据接力 <small>开发文档 v1.0</small></h1>
+    <p style="margin-bottom:14px;">所有 API 接口说明和在线测试工具。</p>
+    <p style="margin-bottom:18px;">服务地址：<code>http://127.0.0.1:8765</code> &nbsp;·&nbsp; 日志：<code>bjs.log</code></p>
+
+    <div id="apiList"></div>
+
+    <div class="footer">BJS 数据接力 · MIT License</div>
+</div>
+
+<script>
+// API定义
+var API_BASE = 'http://127.0.0.1:8765';
+var apis = [
+{name:'健康检查',desc:'检测服务是否运行。',method:'GET',path:'/health',params:[],example:'GET /health',response:'{"code":0,"status":"running","port":8765}'},
+{name:'打开路径',desc:'打开文件夹或用默认程序打开文件。',method:'GET',path:'/api/open',params:[{name:'path',type:'text',required:true,desc:'本地绝对路径'}],example:'GET /api/open?path=C:\\Users',response:'{"code":0,"msg":"ok","data":{"path":"C:\\Users"}}'},
+{name:'弹窗消息',desc:'显示系统消息窗口，7种类型。',method:'POST',path:'/api/msg',params:[{name:'text',type:'text',required:true,desc:'消息内容'},{name:'title',type:'text',required:false,desc:'窗口标题'},{name:'type',type:'select',required:false,desc:'info/warning/error/question/yesno/okcancel/yesnocancel',options:['info','warning','error','question','yesno','okcancel','yesnocancel']},{name:'image',type:'text',required:false,desc:'图片地址'},{name:'width',type:'number',required:false,desc:'窗口宽度'},{name:'height',type:'number',required:false,desc:'窗口高度'}],example:'POST /api/msg {"text":"Hello","type":"yesno"}',response:'{"code":0,"msg":"ok","data":{"code":0,"msg":"yesno answered","data":true}}'},
+{name:'运行程序',desc:'启动本地程序，可带参数。',method:'POST',path:'/api/run',params:[{name:'path',type:'text',required:true,desc:'程序路径'},{name:'args',type:'text',required:false,desc:'命令行参数'},{name:'wait',type:'checkbox',required:false,desc:'是否等待结束'}],example:'POST /api/run {"path":"notepad.exe","args":"test.txt"}',response:'{"code":0,"msg":"程序已启动","data":{"cmd":"notepad.exe test.txt"}}'},
+{name:'自定义对话框',desc:'JSON配置复杂对话框，返回用户输入。',method:'POST',path:'/api/dialog',params:[{name:'config',type:'textarea',required:true,desc:'JSON配置'}],example:'POST /api/dialog {"config":"{\\"title\\":\\"输入\\",\\"controls\\":[{\\"type\\":\\"entry\\",\\"label\\":\\"姓名\\"}],\\"buttons\\":[\\"确定\\"]}"}',response:'{"code":0,"msg":"ok","data":{"button":"确定","values":{"name":"张三"}}}'},
+{name:'系统信息',desc:'获取系统版本、CPU、内存等。',method:'GET',path:'/api/sysinfo',params:[],example:'GET /api/sysinfo',response:'{"code":0,"msg":"ok","data":{"system":"Windows","release":"10"}}'},
+{name:'列出目录',desc:'获取目录下的文件和文件夹列表。',method:'GET',path:'/api/listdir',params:[{name:'path',type:'text',required:false,desc:'目录路径'}],example:'GET /api/listdir?path=C:\\',response:'{"code":0,"msg":"ok","data":[{"name":"Users","is_dir":true,"size":0,"mtime":"2026-08-10 12:00:00"}]}'},
+{name:'读取文本文件',desc:'读取文本文件，自动识别编码。',method:'GET',path:'/api/readfile',params:[{name:'path',type:'text',required:true,desc:'文件路径'}],example:'GET /api/readfile?path=C:\\test.txt',response:'{"code":0,"msg":"ok","data":"文件内容..."}'},
+{name:'创建文件夹',desc:'在指定位置创建新文件夹。',method:'POST',path:'/api/mkdir',params:[{name:'path',type:'text',required:true,desc:'目录路径'}],example:'POST /api/mkdir {"path":"C:\\新建文件夹"}',response:'{"code":0,"msg":"ok","data":{"path":"C:\\新建文件夹"}}'},
+{name:'删除',desc:'删除文件或文件夹（支持递归）。',method:'POST',path:'/api/delete',params:[{name:'path',type:'text',required:true,desc:'要删除的路径'},{name:'recursive',type:'checkbox',required:false,desc:'是否递归删除'}],example:'POST /api/delete {"path":"C:\\temp","recursive":true}',response:'{"code":0,"msg":"ok","data":{"path":"C:\\temp"}}'},
+{name:'复制',desc:'复制文件或文件夹到目标位置。',method:'POST',path:'/api/copy',params:[{name:'src',type:'text',required:true,desc:'源路径'},{name:'dest',type:'text',required:true,desc:'目标路径'}],example:'POST /api/copy {"src":"C:\\a.txt","dest":"D:\\b.txt"}',response:'{"code":0,"msg":"ok","data":{"src":"C:\\a.txt","dest":"D:\\b.txt"}}'},
+{name:'移动',desc:'移动文件或文件夹到目标位置。',method:'POST',path:'/api/move',params:[{name:'src',type:'text',required:true,desc:'源路径'},{name:'dest',type:'text',required:true,desc:'目标路径'}],example:'POST /api/move {"src":"C:\\a.txt","dest":"D:\\b.txt"}',response:'{"code":0,"msg":"ok","data":{"src":"C:\\a.txt","dest":"D:\\b.txt"}}'},
+{name:'蓝奏云下载',desc:'解析蓝奏云链接并下载文件。',method:'POST',path:'/api/lanzou/download',params:[{name:'url',type:'text',required:true,desc:'蓝奏云链接'},{name:'pwd',type:'text',required:false,desc:'提取密码'},{name:'save_path',type:'text',required:false,desc:'保存路径'}],example:'POST /api/lanzou/download {"url":"https://xxx.lanzouw.com/xxx","pwd":"h0fv"}',response:'{"code":0,"msg":"下载成功","data":{"filename":"file.zip","save_path":"D:\\...\\file.zip"}}'},
+{name:'查看日志',desc:'获取后端日志最近N行。',method:'GET',path:'/api/log',params:[{name:'lines',type:'number',required:false,desc:'行数'}],example:'GET /api/log?lines=50',response:'{"code":0,"data":"日志内容..."}'}
+];
+
+// 渲染API卡片
+function renderApis() {
+    var container = document.getElementById('apiList');
+    container.innerHTML = '';
+    for (var idx = 0; idx < apis.length; idx++) {
+        var api = apis[idx];
+        var card = document.createElement('div');
+        card.className = 'api-card';
+
+        var head = document.createElement('div');
+        head.className = 'api-head';
+        var methodSpan = document.createElement('span');
+        methodSpan.className = 'method ' + api.method.toLowerCase();
+        methodSpan.textContent = api.method;
+        head.appendChild(methodSpan);
+        var ep = document.createElement('span');
+        ep.className = 'endpoint';
+        ep.textContent = api.path;
+        head.appendChild(ep);
+        var nameSpan = document.createElement('span');
+        nameSpan.style.marginLeft = 'auto';
+        nameSpan.style.fontWeight = 'bold';
+        nameSpan.style.color = '#444';
+        nameSpan.textContent = api.name;
+        head.appendChild(nameSpan);
+        card.appendChild(head);
+
+        var desc = document.createElement('div');
+        desc.className = 'api-desc';
+        desc.textContent = api.desc;
+        card.appendChild(desc);
+
+        if (api.params && api.params.length > 0) {
+            var pdiv = document.createElement('div');
+            pdiv.className = 'params';
+            pdiv.innerHTML = '<strong>参数：</strong><br>';
+            for (var pi = 0; pi < api.params.length; pi++) {
+                var p = api.params[pi];
+                var req = p.required ? '（必填）' : '（可选）';
+                pdiv.innerHTML += '<code>' + p.name + '</code> ' + p.desc + ' ' + req + '<br>';
+            }
+            card.appendChild(pdiv);
+        }
+
+        if (api.example) {
+            var ex = document.createElement('div');
+            ex.className = 'example';
+            ex.textContent = '示例：' + api.example;
+            card.appendChild(ex);
+        }
+        if (api.response) {
+            var resp = document.createElement('div');
+            resp.className = 'example';
+            resp.style.background = '#2c3e50';
+            resp.textContent = '响应：\n' + api.response;
+            card.appendChild(resp);
+        }
+
+        // 测试工具
+        var test = document.createElement('div');
+        test.className = 'test-section';
+        var inputs = {};
+        if (api.params && api.params.length > 0) {
+            for (var pi2 = 0; pi2 < api.params.length; pi2++) {
+                var p2 = api.params[pi2];
+                var row = document.createElement('div');
+                row.className = 'row';
+                var label = document.createElement('label');
+                label.textContent = p2.name;
+                row.appendChild(label);
+                var input;
+                if (p2.type === 'select') {
+                    input = document.createElement('select');
+                    for (var oi = 0; oi < p2.options.length; oi++) {
+                        var opt = document.createElement('option');
+                        opt.value = p2.options[oi];
+                        opt.textContent = p2.options[oi];
+                        input.appendChild(opt);
+                    }
+                } else if (p2.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 2;
+                    input.placeholder = '输入 ' + p2.name;
+                } else if (p2.type === 'checkbox') {
+                    input = document.createElement('input');
+                    input.type = 'checkbox';
+                } else if (p2.type === 'number') {
+                    input = document.createElement('input');
+                    input.type = 'number';
+                    input.placeholder = '数字';
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = '输入 ' + p2.name;
+                }
+                input.id = 'in-' + idx + '-' + p2.name;
+                inputs[p2.name] = input;
+                row.appendChild(input);
+                test.appendChild(row);
+            }
+        }
+
+        var btnRow = document.createElement('div');
+        btnRow.className = 'row';
+        var sendBtn = document.createElement('button');
+        sendBtn.className = 'btn btn-success';
+        sendBtn.textContent = '测试 (' + api.method + ')';
+        sendBtn.onclick = (function(api, inputs, idx) {
+            return function() { testApi(api, inputs, idx); };
+        })(api, inputs, idx);
+        btnRow.appendChild(sendBtn);
+        var clearBtn = document.createElement('button');
+        clearBtn.className = 'btn btn-outline';
+        clearBtn.textContent = '清空';
+        clearBtn.onclick = (function(idx) {
+            return function() { var rb = document.getElementById('res-' + idx); if (rb) rb.textContent = '等待测试...'; };
+        })(idx);
+        btnRow.appendChild(clearBtn);
+        test.appendChild(btnRow);
+
+        var resBox = document.createElement('div');
+        resBox.className = 'result-box';
+        resBox.id = 'res-' + idx;
+        resBox.textContent = '等待测试...';
+        test.appendChild(resBox);
+
+        card.appendChild(test);
+        container.appendChild(card);
+    }
+}
+
+// 测试API
+async function testApi(api, inputs, idx) {
+    var resBox = document.getElementById('res-' + idx);
+    if (!resBox) return;
+    resBox.textContent = '请求中...';
+    try {
+        var params = {};
+        for (var key in inputs) {
+            var input = inputs[key];
+            var val;
+            if (input.type === 'checkbox') {
+                val = input.checked;
+            } else {
+                val = input.value || '';
+            }
+            var def = null;
+            for (var pi = 0; pi < api.params.length; pi++) {
+                if (api.params[pi].name === key) { def = api.params[pi]; break; }
+            }
+            if (def && def.type === 'number') {
+                val = parseFloat(val) || 0;
+            }
+            params[key] = val;
+        }
+        var url = API_BASE + api.path;
+        var opts = { method: api.method, headers: { 'Content-Type': 'application/json' } };
+        if (api.method === 'GET') {
+            var qs = new URLSearchParams();
+            for (var k in params) {
+                var v = params[k];
+                if (v !== undefined && v !== '' && v !== false) {
+                    qs.append(k, v);
+                }
+            }
+            var finalUrl = qs.toString() ? url + '?' + qs.toString() : url;
+            var resp = await fetch(finalUrl);
+            var data = await resp.json();
+            resBox.textContent = JSON.stringify(data, null, 2);
+        } else {
+            opts.body = JSON.stringify(params);
+            var resp2 = await fetch(url, opts);
+            var data2 = await resp2.json();
+            resBox.textContent = JSON.stringify(data2, null, 2);
+        }
+    } catch (err) {
+        resBox.textContent = '请求失败：' + err.message;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', renderApis);
+</script>
+</body>
+</html>
