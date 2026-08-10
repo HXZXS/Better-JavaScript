@@ -2,6 +2,10 @@
 
 把网页和本地程序连起来。
 
+### Let's speak English
+
+[README-EN.md](https://github.com/HXZXS/Better-JavaScript/README-EN.md) 
+
 ---
 
 ## 这是干什么的
