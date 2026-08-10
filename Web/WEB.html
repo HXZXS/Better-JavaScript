@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJS 数据接力 · 控制台</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f0f4f8;
+            color: #1a3a5c;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 25px 30px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+        }
+        h1 {
+            font-size: 28px;
+            border-bottom: 3px solid #2b6f9e;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 small { font-size: 16px; font-weight: 400; color: #6a8aa8; }
+        .sub { color: #4a6a8a; margin-bottom: 20px; font-size: 14px; border-left: 4px solid #2b6f9e; padding-left: 12px; }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            border: 1px solid #e2eaf2;
+        }
+        .card h3 { display: flex; gap: 8px; align-items: center; font-size: 17px; margin-bottom: 10px; }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .row label { min-width: 70px; font-weight: 500; color: #4a6a8a; }
+        .row input, .row select, .row textarea {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d8e2ed;
+            border-radius: 8px;
+            background: #fafcff;
+            font-size: 14px;
+            outline: none;
+        }
+        .row input:focus, .row select:focus, .row textarea:focus {
+            border-color: #2b6f9e;
+            box-shadow: 0 0 0 3px rgba(43,111,158,0.15);
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #e8edf4;
+            color: #1a3a5c;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .btn-primary { background: #2b6f9e; color: #fff; }
+        .btn-primary:hover { background: #1f5a83; }
+        .btn-success { background: #1f8b4c; color: #fff; }
+        .btn-success:hover { background: #16733e; }
+        .btn-warning { background: #d48c2c; color: #fff; }
+        .btn-warning:hover { background: #b87720; }
+        .btn-purple { background: #8e44ad; color: #fff; }
+        .btn-purple:hover { background: #7d3c98; }
+        .btn-outline { background: transparent; border: 1px solid #cbd7e6; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .preset-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .preset-btn {
+            background: #eef3f8;
+            border: 1px solid #d8e2ed;
+            border-radius: 20px;
+            padding: 2px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #1f3b58;
+        }
+        .preset-btn:hover { background: #d8e2ed; }
+        .result-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #2b6f9e;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .log-viewer {
+            background: #1a2a3e;
+            color: #e8edf4;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: Consolas, monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #f8fafc;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid #e2eaf2;
+            margin-bottom: 20px;
+        }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .online { background: #1f8b4c; }
+        .offline { background: #c0392b; }
+        .file-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .file-table th { text-align: left; padding: 6px 12px; border-bottom: 2px solid #d8e2ed; color: #6a8aa8; }
+        .file-table td { padding: 5px 12px; border-bottom: 1px solid #e2eaf2; }
+        .file-table .dir { cursor: pointer; color: #2b6f9e; font-weight: 600; }
+        .file-table .file { cursor: pointer; color: #2b6f9e; }
+        .file-table .file:hover, .file-table .dir:hover { text-decoration: underline; }
+        @media (max-width: 700px) {
+            .container { padding: 16px; }
+            .row { flex-direction: column; align-items: stretch; }
+            .row label { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔗 BJS 数据接力 <small>v6.0.α</small></h1>
+    <div class="sub">基于 HTTP API 的本地控制台</div>
+    <div class="status-bar">
+        <span><span class="status-dot" id="statusDot"></span> <span id="statusText">检测中...</span></span>
+        <button class="btn btn-sm" onclick="checkHealth()">🔄 刷新</button>
+    </div>
+
+    <!-- 打开路径 -->
+    <div class="card">
+        <h3>📂 打开路径</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="pathInput" value="C:\">
+            <button class="btn btn-primary" onclick="sendOpen()">打开</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="setPath('C:\\Users\\Public')">用户公共</button>
+            <button class="preset-btn" onclick="setPath('C:\\Windows')">Windows</button>
+        </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="card">
+        <h3>💬 弹窗</h3>
+        <div class="row">
+            <label>内容</label>
+            <input type="text" id="msgText" value="Hello from BJS!">
+        </div>
+        <div class="row">
+            <label>标题</label>
+            <input type="text" id="msgTitle" value="来自网页">
+        </div>
+        <div class="row">
+            <label>类型</label>
+            <select id="msgType">
+                <option value="info">info</option>
+                <option value="warning">warning</option>
+                <option value="error">error</option>
+                <option value="question">question</option>
+                <option value="yesno">yesno</option>
+                <option value="okcancel">okcancel</option>
+                <option value="yesnocancel">yesnocancel</option>
+            </select>
+            <button class="btn btn-warning" onclick="sendMsg()">弹窗</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="presetMsg('欢迎使用BJS数据接力','欢迎','info')">欢迎(info)</button>
+            <button class="preset-btn" onclick="presetMsg('确认删除？','确认','yesno')">确认(yesno)</button>
+        </div>
+    </div>
+
+    <!-- 图片弹窗 -->
+    <div class="card">
+        <h3>🖼️ 图片弹窗</h3>
+        <div class="row">
+            <label>图片地址</label>
+            <input type="text" id="imgUrl" value="https://www.python.org/static/img/python-logo.png">
+        </div>
+        <div class="row">
+            <label>说明</label>
+            <input type="text" id="imgCaption" value="Python 标志">
+        </div>
+        <div class="row">
+            <label>宽度</label>
+            <input type="number" id="imgWidth" value="500" style="flex:0.3;">
+            <label>高度</label>
+            <input type="number" id="imgHeight" value="400" style="flex:0.3;">
+            <button class="btn btn-primary" onclick="sendImage()">显示图片</button>
+        </div>
+    </div>
+
+    <!-- 运行程序 -->
+    <div class="card">
+        <h3>🚀 运行程序</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="runPath" value="C:\Windows\System32\notepad.exe">
+        </div>
+        <div class="row">
+            <label>参数</label>
+            <input type="text" id="runArgs" value="test.txt">
+        </div>
+        <div class="row">
+            <label>
+                <input type="checkbox" id="runWait"> 等待结束
+            </label>
+            <button class="btn btn-success" onclick="sendRun()">运行</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="setRun('notepad.exe','')">记事本</button>
+            <button class="preset-btn" onclick="setRun('calc.exe','')">计算器</button>
+        </div>
+    </div>
+
+    <!-- 自定义对话框 -->
+    <div class="card">
+        <h3>🧩 自定义对话框</h3>
+        <div class="row">
+            <label>JSON配置</label>
+            <textarea id="dialogConfig" rows="5">{
+  "title": "用户信息",
+  "width": 450,
+  "height": 350,
+  "controls": [
+    {"type":"entry","label":"姓名","id":"name"},
+    {"type":"combobox","label":"性别","id":"gender","options":["男","女"]},
+    {"type":"checkbox","label":"爱好","id":"hobby","options":["读书","音乐"],"default":["读书"]}
+  ],
+  "buttons":["提交","取消"]
+}</textarea>
+        </div>
+        <div class="row">
+            <button class="btn btn-purple" onclick="sendDialog()">发送对话框</button>
+            <div class="preset-group">
+                <button class="preset-btn" onclick="loadDialogPreset('input')">输入框</button>
+                <button class="preset-btn" onclick="loadDialogPreset('checkbox')">多选</button>
+                <button class="preset-btn" onclick="loadDialogPreset('progress')">进度条</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件浏览器 -->
+    <div class="card">
+        <h3>📂 文件浏览器</h3>
+        <div class="row">
+            <input type="text" id="browsePath" value="C:\">
+            <button class="btn btn-primary" onclick="browse()">浏览</button>
+        </div>
+        <div id="fileList"><p style="color:#6a8aa8;">点击浏览加载</p></div>
+        <div id="fileContent" style="display:none; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between;">
+                <strong>文件内容</strong>
+                <button class="btn btn-sm" onclick="document.getElementById('fileContent').style.display='none'">关闭</button>
+            </div>
+            <div class="log-viewer" id="fileContentText"></div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+            <button class="btn btn-sm btn-success" onclick="mkdir()">新建文件夹</button>
+            <button class="btn btn-sm btn-danger" onclick="delSelected()">删除选中</button>
+        </div>
+    </div>
+
+    <!-- 蓝奏云下载 -->
+    <div class="card">
+        <h3>☁️ 蓝奏云下载</h3>
+        <div class="row">
+            <label>链接</label>
+            <input type="text" id="lanzouUrl" value="https://jiuhunwl.lanzouw.com/iMXv82vhrywj">
+        </div>
+        <div class="row">
+            <label>密码</label>
+            <input type="text" id="lanzouPwd" value="h0fv">
+        </div>
+        <div class="row">
+            <button class="btn btn-success" onclick="downloadLanzou()">解析并下载</button>
+        </div>
+    </div>
+
+    <!-- 日志 -->
+    <div class="card">
+        <h3>📜 运行日志</h3>
+        <div class="row">
+            <button class="btn btn-sm" onclick="fetchLog()">刷新</button>
+            <label>行数</label>
+            <select id="logLines" onchange="fetchLog()">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+            </select>
+        </div>
+        <div class="log-viewer" id="logDisplay">点击刷新加载</div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://127.0.0.1:8765';
+    let selectedPath = '';
+
+    // ---------- 健康检查 ----------
+    async function checkHealth() {
+        const dot = document.getElementById('statusDot');
+        const txt = document.getElementById('statusText');
+        try {
+            const r = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
+            if (r.ok) {
+                dot.className = 'status-dot online';
+                txt.textContent = 'HTTP 服务在线';
+                return true;
+            }
+        } catch(e) {}
+        dot.className = 'status-dot offline';
+        txt.textContent = '服务不可用';
+        return false;
+    }
+
+    // ---------- 通用API调用 ----------
+    async function callApi(method, endpoint, data=null) {
+        try {
+            const opts = { method, headers: {'Content-Type':'application/json'} };
+            if (data) opts.body = JSON.stringify(data);
+            const resp = await fetch(API_BASE + endpoint, opts);
+            return await resp.json();
+        } catch(e) {
+            console.error(e);
+            return null;
+        }
+    }
+
+    // ---------- 打开路径 ----------
+    function setPath(v) { document.getElementById('pathInput').value = v; }
+    async function sendOpen() {
+        const path = document.getElementById('pathInput').value.trim();
+        if (!path) return alert('请输入路径');
+        const res = await callApi('GET', `/api/open?path=${encodeURIComponent(path)}`);
+        alert(res ? (res.code===0 ? '打开成功' : res.msg) : '请求失败');
+    }
+
+    // ---------- 弹窗 ----------
+    function presetMsg(text, title, type) {
+        document.getElementById('msgText').value = text;
+        document.getElementById('msgTitle').value = title;
+        document.getElementById('msgType').value = type;
+    }
+    async function sendMsg() {
+        const text = document.getElementById('msgText').value.trim();
+        if (!text) return alert('请输入内容');
+        const title = document.getElementById('msgTitle').value.trim() || '来自网页';
+        const type = document.getElementById('msgType').value;
+        const res = await callApi('POST', '/api/msg', {text, title, type});
+        alert(res ? (res.code===0 ? '弹窗已显示' : res.msg) : '请求失败');
+    }
+
+    // ---------- 图片弹窗 ----------
+    async function sendImage() {
+        const src = document.getElementById('imgUrl').value.trim();
+        const caption = document.getElementById('imgCaption').value.trim();
+        const w = parseInt(document.getElementById('imgWidth').value) || 0;
+        const h = parseInt(document.getElementById('imgHeight').value) || 0;
+        if (!src) return alert('请输入图片地址');
+        const res = await callApi('POST', '/api/msg', {
+            text: caption || '图片预览',
+            image: src,
+            width: w, height: h,
+            title: '图片预览'
+        });
+        alert(res ? (res.code===0 ? '图片已显示' : res.msg) : '请求失败');
+    }
+
+    // ---------- 运行程序 ----------
+    function setRun(path, args) {
+        document.getElementById('runPath').value = path;
+        document.getElementById('runArgs').value = args || '';
+    }
+    async function sendRun() {
+        const path = document.getElementById('runPath').value.trim();
+        if (!path) return alert('请输入程序路径');
+        const args = document.getElementById('runArgs').value.trim();
+        const wait = document.getElementById('runWait').checked;
+        const res = await callApi('POST', '/api/run', {path, args, wait});
+        alert(res ? (res.code===0 ? '运行成功' : res.msg) : '请求失败');
+    }
+
+    // ---------- 自定义对话框 ----------
+    function loadDialogPreset(type) {
+        const presets = {
+            input: {title:'输入框', width:400, height:200, controls:[{type:'entry',label:'姓名',id:'name'},{type:'entry',label:'年龄',id:'age'}], buttons:['确定']},
+            checkbox: {title:'选择', width:400, height:250, controls:[{type:'checkbox',label:'爱好',id:'hobby',options:['读书','音乐','运动']}], buttons:['确定']},
+            progress: {title:'进度', width:450, height:150, controls:[{type:'progress',label:'进度',id:'prog',value:45}], buttons:['关闭']}
+        };
+        const cfg = presets[type];
+        if (cfg) document.getElementById('dialogConfig').value = JSON.stringify(cfg, null, 2);
+    }
+    async function sendDialog() {
+        let cfg = document.getElementById('dialogConfig').value.trim();
+        if (!cfg) return alert('请输入配置');
+        try { JSON.parse(cfg); } catch(e) { alert('JSON格式错误'); return; }
+        const res = await callApi('POST', '/api/dialog', {config: cfg});
+        alert(res ? (res.code===0 ? '对话框已显示' : res.msg) : '请求失败');
+    }
+
+    // ---------- 文件浏览器 ----------
+    async function browse() {
+        const path = document.getElementById('browsePath').value.trim();
+        if (!path) return alert('请输入路径');
+        const res = await callApi('GET', `/api/listdir?path=${encodeURIComponent(path)}`);
+        const container = document.getElementById('fileList');
+        if (!res || res.code !== 0) {
+            container.innerHTML = `<p style="color:red;">加载失败: ${res ? res.msg : '网络错误'}</p>`;
+            return;
+        }
+        let html = '<table class="file-table"><thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead><tbody>';
+        res.data.forEach(item => {
+            const isDir = item.is_dir;
+            const name = item.name;
+            const size = isDir ? '-' : (item.size < 1024 ? item.size+'B' : (item.size<1048576 ? (item.size/1024).toFixed(1)+'KB' : (item.size/1048576).toFixed(1)+'MB'));
+            html += `<tr>
+                <td class="${isDir ? 'dir' : 'file'}" onclick="${isDir ? `browseTo('${path}\\${name}')` : `viewFile('${path}\\${name}')`}">${name}</td>
+                <td>${size}</td>
+                <td>${item.mtime || '-'}</td>
+                <td><button class="btn btn-sm" onclick="selectPath('${path}\\${name}')">选择</button></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        document.getElementById('fileContent').style.display = 'none';
+    }
+    function browseTo(p) {
+        document.getElementById('browsePath').value = p;
+        browse();
+    }
+    function selectPath(p) {
+        selectedPath = p;
+        alert('已选中: ' + p);
+    }
+    async function viewFile(p) {
+        const res = await callApi('GET', `/api/readfile?path=${encodeURIComponent(p)}`);
+        if (res && res.code === 0) {
+            document.getElementById('fileContentText').textContent = res.data;
+            document.getElementById('fileContent').style.display = 'block';
+        } else {
+            alert('读取失败: ' + (res ? res.msg : '网络错误'));
+        }
+    }
+    async function mkdir() {
+        const name = prompt('请输入新文件夹名称:');
+        if (!name) return;
+        const path = document.getElementById('browsePath').value.trim() + '\\' + name;
+        const res = await callApi('POST', '/api/mkdir', {path});
+        alert(res ? (res.code===0 ? '创建成功' : res.msg) : '请求失败');
+        if (res && res.code===0) browse();
+    }
+    async function delSelected() {
+        if (!selectedPath) return alert('请先选择一个文件或文件夹（点击“选择”按钮）');
+        if (!confirm(`确认删除 ${selectedPath} ？`)) return;
+        const rec = confirm('是否递归删除？（文件夹内全部删除）');
+        const res = await callApi('POST', '/api/delete', {path: selectedPath, recursive: rec});
+        alert(res ? (res.code===0 ? '删除成功' : res.msg) : '请求失败');
+        if (res && res.code===0) browse();
+    }
+
+    // ---------- 蓝奏云下载 ----------
+    async function downloadLanzou() {
+        const url = document.getElementById('lanzouUrl').value.trim();
+        const pwd = document.getElementById('lanzouPwd').value.trim();
+        if (!url) return alert('请输入链接');
+        const res = await callApi('POST', '/api/lanzou/download', {url, pwd});
+        alert(res ? (res.code===0 ? `下载成功：${res.data.filename}\n保存至 ${res.data.save_path}` : res.msg) : '请求失败');
+    }
+
+    // ---------- 日志 ----------
+    async function fetchLog() {
+        const lines = document.getElementById('logLines').value;
+        const res = await callApi('GET', `/api/log?lines=${lines}`);
+        const display = document.getElementById('logDisplay');
+        if (res && res.code === 0) {
+            display.textContent = res.data;
+        } else {
+            display.textContent = '加载日志失败';
+        }
+    }
+
+    // ---------- 初始化 ----------
+    checkHealth();
+    fetchLog();
+    // 定时刷新状态
+    setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
