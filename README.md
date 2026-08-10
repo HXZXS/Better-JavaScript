@@ -1,9 +1,10 @@
-#Better JavaScript
-##重新定义JavaScript的边界
+# Better JavaScript
+
+## 重新定义JavaScript的边界
 
 ---
 
-#Data Relay
+# Data Relay
 
 把网页和本地程序连起来。
 
