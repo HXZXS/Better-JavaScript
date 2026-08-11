@@ -367,7 +367,7 @@ curl -X POST http://127.0.0.1:8765/api/lanzou/download \
 > 与此项目无关
 > 
 > 感谢
-> https://api.bugpk.com/
+> [https://api.bugpk.com/](https://api.bugpk.com/doc-lanzou.html)
 > 提供解析服务
 ---
 
