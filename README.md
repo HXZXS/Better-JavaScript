@@ -3,6 +3,7 @@
 # Data Relay
 
 把网页和本地程序连起来。
+<img width="570" height="274" alt="BJS" src="https://github.com/user-attachments/assets/e0260433-7be8-442a-b2c6-a2ec6d33778e" />
 
 ### Let's speak English
 
@@ -231,6 +232,12 @@ curl -X POST http://127.0.0.1:8765/api/dialog \
 
 ## 文件操作
 
+> [!NOTE]
+> 为确保安全性
+> 发行版会屏蔽部分目录
+>
+> 此栏目仍在优化
+
 ### 列出目录
 
 ```
@@ -354,7 +361,14 @@ curl -X POST http://127.0.0.1:8765/api/lanzou/download \
   -H "Content-Type: application/json" \
   -d '{"url":"https://xxx.lanzouw.com/xxxxx","pwd":"h0fv"}'
 ```
-
+> [!IMPORTANT]
+> API服务来自第三方接口
+> 
+> 与此项目无关
+> 
+> 感谢
+> https://api.bugpk.com/
+> 提供解析服务
 ---
 
 ## 系统信息
@@ -403,9 +417,6 @@ curl "http://127.0.0.1:8765/api/log?lines=50"
 ```bash
 # 安装依赖
 pip install flask flask-cors pystray pillow
-
-# 启动
-python bjs_relay.py
 ```
 
 如果使用exe，请使用预制包或手动打包
@@ -415,13 +426,19 @@ python bjs_relay.py
 ## 关于安全性
 
 服务默认只监听 `127.0.0.1`，也就是说只有本机才能访问。增强安全性。
-
-如果你自己改了绑定地址，或者用内网穿透之类的工具把服务暴露出去，建议在前面加一层鉴权。
+> [!WARNING]
+> 不建议开放HTTP接口 除非在内网环境或有足够的安全措施
+> 
+> 如果你自己改了绑定地址，或者用内网穿透之类的工具把服务暴露出去，建议在前面加一层鉴权。
 
 ---
 
 ## 许可证
 
 MIT License
+
+> [!TIP]
+> 二次修改请注明原作者 HXZXS
+
 
 [LICENSE](https://github.com/HXZXS/Better-JavaScript/blob/main/LICENSE)
