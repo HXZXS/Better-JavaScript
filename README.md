@@ -34,6 +34,13 @@ BJS Data Relay 处理了这个问题。它在本地电脑上运行 HTTP 服务�
 
 去 [Releases](https://github.com/HXZXS/Better-JavaScript/releases) 页面下载最新的 `bjs_relay.exe`。也可以直接跑 Python 源码，看下面的说明。
 
+### 权限
+> [!IMPORTANT]
+> <img width="307" height="145" alt="image" src="https://github.com/user-attachments/assets/1bc99787-dca2-4257-a31c-17479e36b2a3" />
+
+请授予必要的运行权限
+
+
 ### 运行
 
 双击 `bjs_relay.exe`，进行安装，等待程序运行
