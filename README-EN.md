@@ -1,16 +1,19 @@
-# BJS Data Relay
+# Better JavaScript
+### Ongoing Project
+# Data Relay
 
 Connect web pages with local programs.
+<img width="570" height="274" alt="BJS" src="https://github.com/user-attachments/assets/e0260433-7be8-442a-b2c6-a2ec6d33778e" />
 
 ### 让我们说中文
-[README.md](https://github.com/HXZXS/Better-JavaScript/blob/main/README.md)
 
+[README.md](https://github.com/HXZXS/Better-JavaScript/blob/main/README.md)
 
 ---
 
 ## What is this for?
 
-Web pages run in browsers and, by default, cannot access local files, show system dialogs, or launch programs.
+Web pages run in browsers and, by default, cannot access local files or run local programs.
 
 BJS Data Relay solves this problem. It runs an HTTP service on the local computer. The web page sends requests, the service executes the corresponding local operations, and then returns the results to the web page.
 
@@ -229,6 +232,12 @@ The response includes the user's action and entered values:
 
 ## File Operations
 
+> [!NOTE]
+> For security reasons,
+> the release version blocks certain directories.
+>
+> This section is still being optimised.
+
 ### List Directory
 
 ```
@@ -352,6 +361,14 @@ curl -X POST http://127.0.0.1:8765/api/lanzou/download \
   -H "Content-Type: application/json" \
   -d '{"url":"https://xxx.lanzouw.com/xxxxx","pwd":"h0fv"}'
 ```
+> [!IMPORTANT]
+> The API service is provided by a third‑party interface.
+>
+> It is not affiliated with this project.
+>
+> Thanks to
+> [https://api.bugpk.com/](https://api.bugpk.com/doc-lanzou.html)
+> for providing the parsing service.
 
 ---
 
@@ -401,9 +418,6 @@ If you prefer not to use the .exe, run the Python script directly:
 ```bash
 # Install dependencies
 pip install flask flask-cors pystray pillow
-
-# Start
-python bjs_relay.py
 ```
 
 If using the .exe, use the pre‑built package or package it manually.
@@ -412,32 +426,23 @@ If using the .exe, use the pre‑built package or package it manually.
 
 ## About Security
 
-The service listens only on `127.0.0.1` by default, meaning only the local machine can access it. This enhances security.
+The service **by default** listens only on `127.0.0.1`, meaning only the local machine can access it. This enhances security.
+> [!WARNING]
+> It is not recommended to expose the HTTP interface unless in an intranet environment or with sufficient security measures.
 
-If you change the binding address yourself, or expose the service via tools like ngrok, consider adding an authentication layer in front.
+> [!CAUTION]
+> If you change the binding address yourself, or expose the service via tools like ngrok, it is strongly recommended to add an authentication layer in front.
+
+> [!IMPORTANT]
+> The developer HXZXS assumes no responsibility for any issues of any kind.
 
 ---
 
 ## License
 
-MIT License
+Apache License 2.0
 
-Copyright (c) 2026 HXZXS
+> [!TIP]
+> When distributing, please credit the original author HXZXS.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+[LICENSE](https://github.com/HXZXS/Better-JavaScript/blob/main/LICENSE)
