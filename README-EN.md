@@ -446,3 +446,8 @@ Apache License 2.0
 > When distributing, please credit the original author HXZXS.
 
 [LICENSE](https://github.com/HXZXS/Better-JavaScript/blob/main/LICENSE)
+
+---
+## About
+
+*Translation provided by Deepseek.*
