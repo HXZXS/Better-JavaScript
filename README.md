@@ -425,20 +425,23 @@ pip install flask flask-cors pystray pillow
 
 ## 关于安全性
 
-服务默认只监听 `127.0.0.1`，也就是说只有本机才能访问。增强安全性。
+服务**默认**只监听 `127.0.0.1`，也就是说只有本机才能访问。增强安全性。
 > [!WARNING]
 > 不建议开放HTTP接口 除非在内网环境或有足够的安全措施
-> 
-> 如果你自己改了绑定地址，或者用内网穿透之类的工具把服务暴露出去，建议在前面加一层鉴权。
 
+> [!CAUTION]
+> 如果你自己改了绑定地址，或者用内网穿透之类的工具把服务暴露出去，强烈建议在前面加一层鉴权。
+
+> [!IMPORTANT]
+> 开发者 HXZXS 不对任何类型的问题承担任何责任
 ---
 
 ## 许可证
 
-MIT License
+Apache License 2.0
 
 > [!TIP]
-> 二次修改请注明原作者 HXZXS
+> 分发时请注明原作者 HXZXS
 
 
 [LICENSE](https://github.com/HXZXS/Better-JavaScript/blob/main/LICENSE)
