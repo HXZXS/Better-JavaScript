@@ -36,7 +36,8 @@ BJS Data Relay 处理了这个问题。它在本地电脑上运行 HTTP 服务�
 
 ### 权限
 > [!IMPORTANT]
-> <img width="307" height="145" alt="image" src="https://github.com/user-attachments/assets/1bc99787-dca2-4257-a31c-17479e36b2a3" />
+> <img width="290" height="133" alt="image" src="https://github.com/user-attachments/assets/cfc0d48d-275a-435b-813a-a0f5b888a33f" />
+
 
 请授予必要的运行权限
 
