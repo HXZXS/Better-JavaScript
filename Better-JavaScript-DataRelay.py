@@ -1,7 +1,6 @@
 # BJS 数据接力 - 本地桥接服务
 # 版本 6.0.α
 # 开发者 HXZXS
-# 该版本为α版本，仅提供 HTTP API，无自定义协议
 
 import sys
 import os
@@ -37,7 +36,7 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 HTTP_PORT = 8765
 MAIN_ROOT = None   # tkinter根窗口，用于弹窗
 
-# 日志函数 - 更详细
+# 日志函数
 def log(msg, level="INFO", extra=None):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if extra:
