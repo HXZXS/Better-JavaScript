@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJS 数据接力 · 开发文档</title>
+    <style>
+        /* --- 全局 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", -apple-system, "PingFang SC", "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f1f3f6;
+            color: #1a2a3a;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- 主布局 --- */
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 270px;
+            background: #ffffff;
+            border-right: 1px solid #dce2e8;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            overflow: hidden;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+        }
+        .sidebar-header {
+            padding: 20px 20px 14px 20px;
+            border-bottom: 1px solid #eaeef2;
+            flex-shrink: 0;
+        }
+        .sidebar-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f2638;
+            letter-spacing: -0.2px;
+        }
+        .sidebar-header h2 small {
+            font-weight: 400;
+            font-size: 14px;
+            color: #6f8ba0;
+            display: block;
+            margin-top: 2px;
+        }
+        .sidebar-nav-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 10px 20px 10px;
+        }
+        .sidebar-nav-wrap::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav-wrap::-webkit-scrollbar-track {
+            background: #f0f2f4;
+        }
+        .sidebar-nav-wrap::-webkit-scrollbar-thumb {
+            background: #c5d0db;
+            border-radius: 10px;
+        }
+
+        .sidebar-nav .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #8a9fb0;
+            padding: 14px 12px 4px 12px;
+            letter-spacing: 0.6px;
+            font-weight: 600;
+        }
+        .sidebar-nav a {
+            display: block;
+            padding: 7px 14px;
+            border-radius: 6px;
+            color: #2c4055;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.12s, color 0.12s;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+        .sidebar-nav a:hover {
+            background: #eef3f8;
+            color: #0f2638;
+        }
+        .sidebar-nav a.active {
+            background: #e4edf5;
+            color: #1a5276;
+            border-left-color: #2b6f9e;
+            font-weight: 500;
+        }
+
+        /* ===== 主内容 ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #f7f9fb;
+        }
+        .main-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 40px 40px 40px;
+        }
+        .main-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .main-scroll::-webkit-scrollbar-track {
+            background: #f0f2f5;
+        }
+        .main-scroll::-webkit-scrollbar-thumb {
+            background: #c5d0db;
+            border-radius: 10px;
+        }
+
+        /* --- 顶部导航条 --- */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #e2e8ee;
+            margin-bottom: 22px;
+            flex-shrink: 0;
+        }
+        .top-nav .page-info {
+            font-size: 14px;
+            color: #5a738a;
+        }
+        .top-nav .page-info strong {
+            color: #1a3a5c;
+        }
+        .top-nav .nav-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .top-nav .nav-buttons button {
+            padding: 6px 18px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #1f3a4f;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.12s, border-color 0.12s;
+        }
+        .top-nav .nav-buttons button:hover {
+            background: #eef3f8;
+            border-color: #a0b3c4;
+        }
+        .top-nav .nav-buttons button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #f5f7f9;
+        }
+
+        /* --- API 详情卡片 --- */
+        .api-detail {
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid #e2e8ee;
+            padding: 28px 32px 32px 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .api-detail .api-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .api-detail .method {
+            font-weight: 700;
+            font-size: 13px;
+            padding: 2px 16px;
+            border-radius: 20px;
+            color: #fff;
+            background: #2b6f9e;
+            border: 1px solid #1a4f72;
+            letter-spacing: 0.3px;
+        }
+        .api-detail .method.get { background: #2980b9; border-color: #1a5276; }
+        .api-detail .method.post { background: #27ae60; border-color: #1a7a42; }
+        .api-detail .method.delete { background: #c0392b; border-color: #922b21; }
+        .api-detail .endpoint {
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 16px;
+            background: #f0f4f9;
+            padding: 2px 14px;
+            border-radius: 6px;
+            border: 1px solid #dce2ea;
+            color: #1a2a3e;
+        }
+        .api-detail .api-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f2638;
+            margin-left: auto;
+        }
+        .api-detail .api-desc {
+            font-size: 15px;
+            color: #3d5569;
+            margin: 12px 0 16px 0;
+            padding: 12px 16px;
+            background: #f6f9fc;
+            border-radius: 8px;
+            border-left: 4px solid #2b6f9e;
+        }
+        .api-detail .api-desc strong {
+            color: #1a3a5c;
+        }
+
+        /* 参数表格 */
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 10px 0 16px 0;
+        }
+        .params-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #f0f4f9;
+            border-bottom: 2px solid #dce2ea;
+            color: #1f3a4f;
+            font-weight: 600;
+        }
+        .params-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #eaeef3;
+        }
+        .params-table .required {
+            color: #c0392b;
+            font-weight: 500;
+            font-size: 12px;
+        }
+        .params-table .optional {
+            color: #6f8ba0;
+            font-size: 12px;
+        }
+        .params-table code {
+            background: #eef3f8;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        /* 示例 */
+        .example-block {
+            background: #1a2a3e;
+            color: #e8edf4;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 8px 0 12px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .example-block .label {
+            color: #8faabc;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .example-block .label .code {
+            color: #e8edf4;
+        }
+
+        /* 测试工具 */
+        .test-section {
+            margin-top: 18px;
+            border-top: 1px solid #e2e8ee;
+            padding-top: 18px;
+        }
+        .test-section .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .test-section .row label {
+            min-width: 70px;
+            font-weight: 500;
+            font-size: 13px;
+            color: #3d5569;
+        }
+        .test-section .row input,
+        .test-section .row textarea,
+        .test-section .row select {
+            flex: 1;
+            min-width: 150px;
+            padding: 6px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #ffffff;
+            transition: border 0.15s;
+        }
+        .test-section .row input:focus,
+        .test-section .row textarea:focus,
+        .test-section .row select:focus {
+            border-color: #2b6f9e;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(43,111,158,0.08);
+        }
+        .test-section .row textarea {
+            min-height: 38px;
+            font-family: Consolas, "Courier New", monospace;
+        }
+        .test-section .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 6px 22px;
+            border: 1px solid #b0bec5;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #f0f4f9;
+            color: #1f3a4f;
+            transition: background 0.12s, border-color 0.12s;
+        }
+        .btn:hover {
+            background: #e2eaf2;
+            border-color: #8fa3b3;
+        }
+        .btn-success {
+            background: #27ae60;
+            border-color: #1e8449;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #1e8449;
+            border-color: #186a3b;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #bcc9d4;
+        }
+        .btn-outline:hover {
+            background: #edf2f7;
+        }
+        .result-box {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #fafcfd;
+            border: 1px solid #dde3ea;
+            border-left: 4px solid #2b6f9e;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* --- 页脚 --- */
+        .footer {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid #dce2e8;
+            text-align: center;
+            font-size: 13px;
+            color: #6f8ba0;
+            flex-shrink: 0;
+        }
+
+        /* --- 空状态 --- */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6f8ba0;
+        }
+        .empty-state h3 {
+            font-size: 20px;
+            color: #1a3a5c;
+            margin-bottom: 8px;
+        }
+
+        /* --- 响应式 --- */
+        @media (max-width: 820px) {
+            .app { flex-direction: column; height: auto; }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+                border-right: none;
+                border-bottom: 1px solid #dce2e8;
+            }
+            .sidebar-nav-wrap {
+                overflow-y: auto;
+                max-height: 180px;
+            }
+            .main { height: auto; }
+            .main-scroll { padding: 16px 18px 30px 18px; }
+            .top-nav { flex-wrap: wrap; gap: 10px; }
+            .top-nav .nav-buttons { margin-left: auto; }
+            .api-detail { padding: 18px 16px; }
+            .api-detail .api-name { font-size: 18px; margin-left: 0; width: 100%; }
+            .api-detail .api-head { flex-wrap: wrap; }
+        }
+        @media (max-width: 480px) {
+            .test-section .row { flex-direction: column; align-items: stretch; }
+            .test-section .row label { min-width: auto; }
+            .top-nav { flex-direction: column; align-items: stretch; }
+            .top-nav .nav-buttons { justify-content: center; }
+            .params-table { font-size: 13px; }
+            .params-table th, .params-table td { padding: 5px 8px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>BJS 文档 <small>v6.0.β</small></h2>
+        </div>
+        <div class="sidebar-nav-wrap">
+            <nav class="sidebar-nav" id="sidebarNav">
+                <div class="section-title">概览</div>
+                <a data-id="intro" class="active">简介</a>
+                <div class="section-title">基础功能</div>
+                <a data-id="health">健康检查</a>
+                <a data-id="open">打开路径</a>
+                <a data-id="msg">弹窗消息</a>
+                <a data-id="run">运行程序</a>
+                <a data-id="dialog">自定义对话框</a>
+                <a data-id="listdir">列出目录</a>
+                <a data-id="readfile">读取文件</a>
+                <a data-id="mkdir">创建文件夹</a>
+                <a data-id="delete">删除</a>
+                <a data-id="copy">复制</a>
+                <a data-id="move">移动</a>
+                <a data-id="lanzou">蓝奏云下载</a>
+                <a data-id="log">查看日志</a>
+                <a data-id="sysinfo">系统信息</a>
+                <div class="section-title">高级功能（需卡密）</div>
+                <a data-id="batch-rename">批量重命名</a>
+                <a data-id="sync">目录同步</a>
+                <a data-id="schedule">定时任务</a>
+                <a data-id="clipboard">剪贴板历史</a>
+                <a data-id="watch">文件监听</a>
+                <a data-id="search">全文搜索</a>
+                <a data-id="versions">版本管理</a>
+                <a data-id="duplicates">重复文件</a>
+                <a data-id="archive">压缩包管理</a>
+                <a data-id="share">局域网分享</a>
+                <a data-id="remote">远程协助</a>
+                <a data-id="device">多设备同步</a>
+                <a data-id="plugin">插件管理</a>
+                <a data-id="script">自定义脚本</a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- ===== 主内容 ===== -->
+    <main class="main">
+        <div class="main-scroll" id="mainScroll">
+
+            <!-- 顶部导航条 -->
+            <div class="top-nav">
+                <div class="page-info">
+                    当前：<strong id="currentNavLabel">简介</strong> &nbsp;·&nbsp;
+                    <span id="currentNavIndex">1 / 28</span>
+                </div>
+                <div class="nav-buttons">
+                    <button id="prevBtn" onclick="navigate(-1)">← 上一项</button>
+                    <button id="nextBtn" onclick="navigate(1)">下一项 →</button>
+                </div>
+            </div>
+
+            <!-- 内容容器 -->
+            <div id="contentContainer"></div>
+
+            <div class="footer">BJS 数据接力 · HXZXS</div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ============================================================
+    //  数据定义
+    // ============================================================
+    const API_BASE = 'http://127.0.0.1:8765';
+
+    // 每个 API 的详细描述（文案手工打磨，自然无 AI 味）
+    const apiData = [
+        {
+            id: 'intro',
+            name: '简介',
+            method: '',
+            path: '',
+            desc: 'BJS 数据接力是一个本地 HTTP 服务，通过 API 让网页或脚本调用系统功能。<br><br>' +
+                  '基础功能无需任何授权，开箱即用。高级功能（如定时任务、文件监听、版本历史等）需要有效的卡密激活。<br><br>' +
+                  '服务默认监听 <code>127.0.0.1:8765</code>，所有接口返回统一的 JSON 结构：<br>' +
+                  '<code>{"code":0, "msg":"ok", "data": {...}}</code> 其中 <code>code===0</code> 表示成功。',
+            params: [],
+            example: '',
+            response: '',
+            hideTest: true
+        },
+        // ----- 基础 -----
+        {
+            id: 'health',
+            name: '健康检查',
+            method: 'GET',
+            path: '/health',
+            desc: '检测服务是否正常运行。啥参数都不用，能通就说明 BJS 还活着。<br><br>' +
+                  '通常用于前端判断服务状态，或者写监控脚本时先用这个接口探路。',
+            params: [],
+            example: 'GET /health',
+            response: '{"code":0,"status":"running","port":8765}'
+        },
+        {
+            id: 'open',
+            name: '打开路径',
+            method: 'GET',
+            path: '/api/open',
+            desc: '用系统默认程序打开文件或文件夹。传入绝对路径，支持 Windows 和 macOS。<br><br>' +
+                  '比如传入 <code>C:\\Users</code> 会打开资源管理器；传入 <code>C:\\test.txt</code> 会用记事本打开。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '本地绝对路径' }
+            ],
+            example: 'GET /api/open?path=C:\\Users',
+            response: '{"code":0,"msg":"ok","data":{"path":"C:\\Users"}}'
+        },
+        {
+            id: 'msg',
+            name: '弹窗消息',
+            method: 'POST',
+            path: '/api/msg',
+            desc: '在电脑上弹出一个系统消息框。支持 7 种类型，最常用的就是 info、yesno 和 error。<br><br>' +
+                  '传 <code>image</code> 参数还能显示图片弹窗，适合做通知或提醒。',
+            params: [
+                { name: 'text', type: 'text', required: true, desc: '消息内容' },
+                { name: 'title', type: 'text', required: false, desc: '窗口标题，默认为"来自网页"' },
+                { name: 'type', type: 'select', required: false, desc: '类型', options: ['info', 'warning', 'error', 'question', 'yesno', 'okcancel', 'yesnocancel'] },
+                { name: 'image', type: 'text', required: false, desc: '图片地址（网络或本地路径）' },
+                { name: 'width', type: 'number', required: false, desc: '图片弹窗宽度' },
+                { name: 'height', type: 'number', required: false, desc: '图片弹窗高度' }
+            ],
+            example: 'POST /api/msg {"text":"Hello from BJS","type":"yesno"}',
+            response: '{"code":0,"msg":"ok","data":true}'
+        },
+        {
+            id: 'run',
+            name: '运行程序',
+            method: 'POST',
+            path: '/api/run',
+            desc: '启动一个本地程序。可以带参数，也可以选择等待程序结束再返回。<br><br>' +
+                  '特别适合做自动化流程：先启动一个程序执行任务，等它跑完再继续下一步。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '程序路径' },
+                { name: 'args', type: 'text', required: false, desc: '命令行参数' },
+                { name: 'wait', type: 'checkbox', required: false, desc: '是否等待程序结束' }
+            ],
+            example: 'POST /api/run {"path":"notepad.exe","args":"test.txt"}',
+            response: '{"code":0,"msg":"程序已启动","data":{"cmd":"notepad.exe test.txt"}}'
+        },
+        {
+            id: 'dialog',
+            name: '自定义对话框',
+            method: 'POST',
+            path: '/api/dialog',
+            desc: '用 JSON 描述一个复杂的对话框，支持输入框、下拉框、复选框、进度条等控件。<br><br>' +
+                  '比普通弹窗灵活多了，适合做用户交互面板。用户点按钮后会把输入的内容返回给你。',
+            params: [
+                { name: 'config', type: 'textarea', required: true, desc: 'JSON 格式的对话框配置' }
+            ],
+            example: 'POST /api/dialog {"config":"{\\"title\\":\\"输入\\",\\"controls\\":[{\\"type\\":\\"entry\\",\\"label\\":\\"姓名\\"}],\\"buttons\\":[\\"确定\\"]}"}',
+            response: '{"code":0,"msg":"ok","data":{"button":"确定","values":{"name":"张三"}}}'
+        },
+        {
+            id: 'listdir',
+            name: '列出目录',
+            method: 'GET',
+            path: '/api/listdir',
+            desc: '读取目录下的文件和子文件夹列表，返回名称、大小、修改时间等信息。<br><br>' +
+                  '默认按文件夹优先、名称排序，方便浏览。不传 path 的话会返回用户主目录。',
+            params: [
+                { name: 'path', type: 'text', required: false, desc: '目录路径，默认为用户主目录' }
+            ],
+            example: 'GET /api/listdir?path=C:\\',
+            response: '{"code":0,"data":[{"name":"Users","is_dir":true,"size":0,"mtime":"2026-08-10 12:00:00"}]}'
+        },
+        {
+            id: 'readfile',
+            name: '读取文本文件',
+            method: 'GET',
+            path: '/api/readfile',
+            desc: '读取文本文件内容，自动尝试 UTF-8 和 GBK 编码，省得你猜字符集。<br><br>' +
+                  '只能读纯文本文件，二进制文件就别来了。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '文件路径' }
+            ],
+            example: 'GET /api/readfile?path=C:\\test.txt',
+            response: '{"code":0,"data":"文件内容..."}'
+        },
+        {
+            id: 'mkdir',
+            name: '创建文件夹',
+            method: 'POST',
+            path: '/api/mkdir',
+            desc: '新建一个文件夹。如果路径已经存在会返回错误。<br><br>' +
+                  '会自动创建中间缺失的目录，比如 <code>C:\\a\\b\\c</code> 如果 a 和 b 都不存在，会一并创建。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '要创建的目录路径' }
+            ],
+            example: 'POST /api/mkdir {"path":"C:\\新建文件夹"}',
+            response: '{"code":0}'
+        },
+        {
+            id: 'delete',
+            name: '删除',
+            method: 'POST',
+            path: '/api/delete',
+            desc: '删除文件或文件夹。如果是文件夹且 <code>recursive</code> 为 true，会连里面的东西一起删掉。<br><br>' +
+                  '小心用，删了就没了。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '要删除的路径' },
+                { name: 'recursive', type: 'checkbox', required: false, desc: '是否递归删除文件夹' }
+            ],
+            example: 'POST /api/delete {"path":"C:\\temp","recursive":true}',
+            response: '{"code":0}'
+        },
+        {
+            id: 'copy',
+            name: '复制',
+            method: 'POST',
+            path: '/api/copy',
+            desc: '复制文件或文件夹到目标位置。文件夹会整个复制过去。<br><br>' +
+                  '如果目标已存在，会覆盖（文件）或合并（文件夹）。',
+            params: [
+                { name: 'src', type: 'text', required: true, desc: '源路径' },
+                { name: 'dest', type: 'text', required: true, desc: '目标路径' }
+            ],
+            example: 'POST /api/copy {"src":"C:\\a.txt","dest":"D:\\b.txt"}',
+            response: '{"code":0}'
+        },
+        {
+            id: 'move',
+            name: '移动',
+            method: 'POST',
+            path: '/api/move',
+            desc: '移动文件或文件夹到目标位置。其实就是剪切粘贴。<br><br>' +
+                  '跨盘符移动会复制再删除，同盘符就是重命名操作，速度很快。',
+            params: [
+                { name: 'src', type: 'text', required: true, desc: '源路径' },
+                { name: 'dest', type: 'text', required: true, desc: '目标路径' }
+            ],
+            example: 'POST /api/move {"src":"C:\\a.txt","dest":"D:\\b.txt"}',
+            response: '{"code":0}'
+        },
+        {
+            id: 'lanzou',
+            name: '蓝奏云下载',
+            method: 'POST',
+            path: '/api/lanzou/download',
+            desc: '解析蓝奏云分享链接，把文件下载到本地。支持有密码的分享。<br><br>' +
+                  '返回下载后的文件路径和文件名，省得自己扒真实下载地址。',
+            params: [
+                { name: 'url', type: 'text', required: true, desc: '蓝奏云分享链接' },
+                { name: 'pwd', type: 'text', required: false, desc: '提取密码' },
+                { name: 'save_path', type: 'text', required: false, desc: '保存路径（目录或完整路径）' }
+            ],
+            example: 'POST /api/lanzou/download {"url":"https://xxx.lanzouw.com/xxx","pwd":"h0fv"}',
+            response: '{"code":0,"data":{"filename":"file.zip","save_path":"D:\\downloads\\file.zip"}}'
+        },
+        {
+            id: 'log',
+            name: '查看日志',
+            method: 'GET',
+            path: '/api/log',
+            desc: '获取 BJS 后端的运行日志。默认返回最近 100 行。<br><br>' +
+                  '用来排查问题最方便，看看服务干了什么、报了什么错。',
+            params: [
+                { name: 'lines', type: 'number', required: false, desc: '返回行数' }
+            ],
+            example: 'GET /api/log?lines=50',
+            response: '{"code":0,"data":"[2026-08-13 12:00:00] INFO: 服务启动"}'
+        },
+        {
+            id: 'sysinfo',
+            name: '系统信息',
+            method: 'GET',
+            path: '/api/sysinfo',
+            desc: '获取电脑的基本信息：操作系统、CPU 核心数、内存大小、磁盘使用情况。<br><br>' +
+                  '如果装了 psutil 会返回详细信息，没装的话返回基础数据。',
+            params: [],
+            example: 'GET /api/sysinfo',
+            response: '{"code":0,"data":{"system":"Windows","release":"10","cpu_count":8,"memory_total":16384}}'
+        },
+
+        // ----- 高级（需卡密） -----
+        {
+            id: 'batch-rename',
+            name: '批量重命名',
+            method: 'POST',
+            path: '/api/advanced/batch-rename',
+            desc: '用正则表达式批量重命名文件。先预览再执行，防止手滑。<br><br>' +
+                  '比如把 <code>IMG_001.jpg</code> 重命名为 <code>photo_001.jpg</code>，用正则 <code>IMG_(\\d+)</code> 替换成 <code>photo_$1</code>。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '目录路径' },
+                { name: 'pattern', type: 'text', required: true, desc: '正则匹配模式' },
+                { name: 'replacement', type: 'text', required: true, desc: '替换内容' },
+                { name: 'preview', type: 'checkbox', required: false, desc: '是否预览（不实际重命名）' }
+            ],
+            example: 'POST /api/advanced/batch-rename {"path":"C:\\photos","pattern":"IMG_(\\d+)","replacement":"photo_$1","preview":true}',
+            response: '{"code":0,"data":{"preview":true,"results":[{"old":"IMG_001.jpg","new":"photo_001.jpg","will_change":true}]}}'
+        },
+        {
+            id: 'sync',
+            name: '目录同步',
+            method: 'POST',
+            path: '/api/advanced/sync',
+            desc: '把源目录的内容同步到目标目录。有三种模式：<br>' +
+                  '• <strong>mirror</strong>：完全镜像，目标会跟源一模一样（多余文件会被删掉）<br>' +
+                  '• <strong>merge</strong>：合并，只新增和更新，不删东西<br>' +
+                  '• <strong>update</strong>：只更新已有文件，不新增不删除<br><br>' +
+                  '适合做备份或者多台电脑之间的文件同步。',
+            params: [
+                { name: 'src', type: 'text', required: true, desc: '源目录' },
+                { name: 'dest', type: 'text', required: true, desc: '目标目录' },
+                { name: 'mode', type: 'select', required: false, desc: '同步模式', options: ['mirror', 'merge', 'update'] },
+                { name: 'exclude', type: 'text', required: false, desc: '排除的后缀（逗号分隔）' }
+            ],
+            example: 'POST /api/advanced/sync {"src":"C:\\work","dest":"E:\\backup","mode":"mirror","exclude":[".tmp"]}',
+            response: '{"code":0,"msg":"同步完成"}'
+        },
+        {
+            id: 'schedule',
+            name: '定时任务',
+            method: 'POST',
+            path: '/api/advanced/schedule',
+            desc: '添加一个定时任务，到时间自动执行指定的动作。<br><br>' +
+                  '触发器支持 cron 表达式（比如 <code>0 2 * * *</code> 表示每天凌晨两点）或者 interval 秒数。<br>' +
+                  '目前动作只实现了 <code>sync</code>（目录同步），后面会加更多。',
+            params: [
+                { name: 'name', type: 'text', required: true, desc: '任务名称（唯一）' },
+                { name: 'trigger', type: 'select', required: true, desc: '触发器类型', options: ['cron', 'interval'] },
+                { name: 'expression', type: 'text', required: true, desc: 'cron表达式或秒数' },
+                { name: 'action', type: 'text', required: true, desc: '动作（目前仅支持 sync）' },
+                { name: 'params', type: 'text', required: false, desc: '动作参数的 JSON' }
+            ],
+            example: 'POST /api/advanced/schedule {"name":"dailybackup","trigger":"cron","expression":"0 2 * * *","action":"sync","params":{"src":"C:\\data","dest":"E:\\backup"}}',
+            response: '{"code":0,"msg":"任务 \'dailybackup\' 已添加"}'
+        },
+        {
+            id: 'clipboard',
+            name: '剪贴板历史',
+            method: 'GET',
+            path: '/api/advanced/clipboard/history',
+            desc: '获取剪贴板的最近历史记录。最多存 100 条，多了会顶掉旧的。<br><br>' +
+                  '配合恢复接口用，可以找回之前复制过的内容。',
+            params: [
+                { name: 'limit', type: 'number', required: false, desc: '返回条数' }
+            ],
+            example: 'GET /api/advanced/clipboard/history?limit=10',
+            response: '{"code":0,"data":["文本1","文本2"]}'
+        },
+        {
+            id: 'watch',
+            name: '文件监听',
+            method: 'POST',
+            path: '/api/advanced/watch',
+            desc: '监听一个目录，当有文件创建或修改时，自动执行动作（移动或复制）。<br><br>' +
+                  '用来做自动归档特别方便：比如把下载目录里新建的 PDF 自动挪到指定文件夹。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '要监听的目录' },
+                { name: 'events', type: 'text', required: false, desc: '事件类型（create, modify，默认 create）' },
+                { name: 'filter', type: 'text', required: false, desc: '文件扩展名过滤（比如 .pdf）' },
+                { name: 'action', type: 'select', required: true, desc: '动作', options: ['move', 'copy'] },
+                { name: 'target', type: 'text', required: true, desc: '目标目录' }
+            ],
+            example: 'POST /api/advanced/watch {"path":"C:\\incoming","action":"move","target":"C:\\archive"}',
+            response: '{"code":0,"msg":"已开始监听 C:\\incoming"}'
+        },
+        {
+            id: 'search',
+            name: '全文搜索',
+            method: 'POST',
+            path: '/api/advanced/search',
+            desc: '在指定目录里搜索文件。既可以搜文件名，也可以搜文件内容。<br><br>' +
+                  '可以按扩展名过滤，结果最多返回 100 条，防止炸掉。适合找合同、代码之类的。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '搜索目录' },
+                { name: 'keyword', type: 'text', required: true, desc: '搜索关键词' },
+                { name: 'filetype', type: 'text', required: false, desc: '扩展名过滤（逗号分隔）' }
+            ],
+            example: 'POST /api/advanced/search {"path":"C:\\documents","keyword":"合同","filetype":"docx,pdf"}',
+            response: '{"code":0,"data":[{"path":"C:\\documents\\合同.docx","type":"filename"}]}'
+        },
+        {
+            id: 'versions',
+            name: '版本管理',
+            method: 'GET / POST',
+            path: '/api/advanced/versions / restore',
+            desc: '文件每次修改时，BJS 会自动保存一个历史副本。<br><br>' +
+                  '用 <code>GET</code> 查看所有版本，用 <code>POST /restore</code> 恢复到指定版本。<br>' +
+                  '版本按时间戳命名，看得清楚。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '文件路径' },
+                { name: 'version', type: 'text', required: false, desc: '要恢复的版本号（POST 时必填）' }
+            ],
+            example: 'GET /api/advanced/versions?path=C:\\report.docx',
+            response: '{"code":0,"data":[{"version":"20260810_143022","file":"20260810_143022_report.docx","size":1024,"mtime":"2026-08-10 14:30:22"}]}'
+        },
+        {
+            id: 'duplicates',
+            name: '重复文件查找',
+            method: 'POST',
+            path: '/api/advanced/duplicates',
+            desc: '扫描一个目录，找出内容重复的文件。基于 MD5 或 SHA1 哈希判断。<br><br>' +
+                  '返回每个重复组的文件列表，方便你清理多余的备份。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '扫描目录' },
+                { name: 'algorithm', type: 'select', required: false, desc: '哈希算法', options: ['md5', 'sha1'] },
+                { name: 'min_size', type: 'number', required: false, desc: '最小文件大小（字节）' }
+            ],
+            example: 'POST /api/advanced/duplicates {"path":"C:\\downloads","algorithm":"md5","min_size":1024}',
+            response: '{"code":0,"data":[{"hash":"abc123","paths":["C:\\downloads\\a.txt","C:\\downloads\\b.txt"]}]}'
+        },
+        {
+            id: 'archive',
+            name: '压缩包管理',
+            method: 'POST',
+            path: '/api/advanced/archive/extract / create',
+            desc: '解压或创建 ZIP 压缩包。<br><br>' +
+                  '解压：把 zip 文件解到指定目录。<br>' +
+                  '创建：把一批文件或文件夹打包成一个 zip。密码功能先占位，后面补上。',
+            params: [
+                { name: 'archive', type: 'text', required: true, desc: '压缩包路径（解压用）' },
+                { name: 'target', type: 'text', required: true, desc: '目标目录（解压用）' },
+                { name: 'sources', type: 'text', required: false, desc: '源文件/目录列表（创建用，逗号分隔）' }
+            ],
+            example: 'POST /api/advanced/archive/extract {"archive":"C:\\files.zip","target":"C:\\extracted"}',
+            response: '{"code":0,"msg":"解压完成"}'
+        },
+        {
+            id: 'share',
+            name: '局域网分享',
+            method: 'POST',
+            path: '/api/advanced/share',
+            desc: '生成一个临时链接，让同一局域网的人可以访问你电脑上的文件。<br><br>' +
+                  '目前是占位功能，实际还没实现真正的 HTTP 文件服务。先留着接口，后面补。',
+            params: [
+                { name: 'path', type: 'text', required: true, desc: '分享路径' },
+                { name: 'expires_in', type: 'number', required: false, desc: '有效期（秒）' }
+            ],
+            example: 'POST /api/advanced/share {"path":"C:\\share","expires_in":3600}',
+            response: '{"code":0,"data":{"url":"http://127.0.0.1:8765/share/placeholder"}}'
+        },
+        {
+            id: 'remote',
+            name: '远程协助',
+            method: 'POST',
+            path: '/api/advanced/remote/token',
+            desc: '生成一个临时令牌，允许别人通过浏览器临时操作你的文件。<br><br>' +
+                  '也是占位功能，后面会实现在线文件浏览和下载。',
+            params: [
+                { name: 'expires_in', type: 'number', required: false, desc: '有效期（秒）' }
+            ],
+            example: 'POST /api/advanced/remote/token {"expires_in":300}',
+            response: '{"code":0,"data":{"token":"abc123","url":"https://bjs.example.com/remote/abc123"}}'
+        },
+        {
+            id: 'device',
+            name: '多设备同步',
+            method: 'POST',
+            path: '/api/advanced/sync/device',
+            desc: '配置多个设备之间的同步。目前只是个占位，后面会整合真正的设备间同步逻辑。<br><br>' +
+                  '把设备 ID 和同步目录记下来，方便以后扩展。',
+            params: [
+                { name: 'device_id', type: 'text', required: true, desc: '设备标识' },
+                { name: 'sync_path', type: 'text', required: true, desc: '同步目录' },
+                { name: 'auto_sync', type: 'checkbox', required: false, desc: '是否自动同步' }
+            ],
+            example: 'POST /api/advanced/sync/device {"device_id":"laptop-001","sync_path":"D:\\bjs_data"}',
+            response: '{"code":0,"msg":"设备同步已配置（占位）"}'
+        },
+        {
+            id: 'plugin',
+            name: '插件管理',
+            method: 'POST',
+            path: '/api/advanced/plugin/install / exec',
+            desc: '安装和执行插件。插件机制还在开发中，现在只能先占位。<br><br>' +
+                  '以后可以直接通过 API 安装第三方的功能扩展。',
+            params: [
+                { name: 'source', type: 'text', required: true, desc: '插件源 URL' },
+                { name: 'name', type: 'text', required: true, desc: '插件名称' }
+            ],
+            example: 'POST /api/advanced/plugin/install {"source":"https://plugins.bjs.com/backup-tool.bjs","name":"backup-tool"}',
+            response: '{"code":0,"msg":"插件安装占位"}'
+        },
+        {
+            id: 'script',
+            name: '自定义脚本',
+            method: 'POST',
+            path: '/api/advanced/script/exec',
+            desc: '上传一段 Python 代码，让 BJS 帮你执行。<br><br>' +
+                  '适合做一些临时的自动化操作，比如文件整理、数据处理。注意安全，别传危险的代码。',
+            params: [
+                { name: 'script', type: 'textarea', required: true, desc: 'Python 脚本内容' },
+                { name: 'timeout', type: 'number', required: false, desc: '超时时间（秒）' }
+            ],
+            example: 'POST /api/advanced/script/exec {"script":"print(\'hello\')"}',
+            response: '{"code":0,"msg":"脚本执行完成"}'
+        }
+    ];
+
+    // ============================================================
+    //  状态 & 渲染
+    // ============================================================
+    let currentIndex = 0;
+    const total = apiData.length;
+
+    function renderDetail(index) {
+        const item = apiData[index];
+        if (!item) return;
+
+        const container = document.getElementById('contentContainer');
+        const label = document.getElementById('currentNavLabel');
+        const idxSpan = document.getElementById('currentNavIndex');
+
+        // 更新导航信息
+        label.textContent = item.name;
+        idxSpan.textContent = (index + 1) + ' / ' + total;
+
+        // 更新按钮状态
+        document.getElementById('prevBtn').disabled = (index === 0);
+        document.getElementById('nextBtn').disabled = (index === total - 1);
+
+        // 更新侧边栏高亮
+        document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
+        const targetLink = document.querySelector(`.sidebar-nav a[data-id="${item.id}"]`);
+        if (targetLink) targetLink.classList.add('active');
+
+        // 如果是简介页，特殊渲染
+        if (item.id === 'intro') {
+            container.innerHTML = `
+                <div class="api-detail">
+                    <div class="api-name" style="margin-bottom:8px;">📖 简介</div>
+                    <div class="api-desc" style="border-left-color:#27ae60; background:#f4faf7;">
+                        ${item.desc}
+                    </div>
+                    <div style="margin-top:12px; color:#4a6a8a; font-size:14px;">
+                        <strong>侧边栏</strong> 列出所有接口，点哪个看哪个。<br>
+                        <strong>上下按钮</strong> 可以逐个翻页，方便快速浏览。
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // 构建参数表格
+        let paramsHtml = '';
+        if (item.params && item.params.length > 0) {
+            paramsHtml = `
+                <table class="params-table">
+                    <thead><tr><th>参数名</th><th>类型</th><th>说明</th><th>必填</th></tr></thead>
+                    <tbody>
+                        ${item.params.map(p => `
+                            <tr>
+                                <td><code>${p.name}</code></td>
+                                <td>${p.type === 'select' ? '选择' : p.type === 'checkbox' ? '布尔' : p.type === 'textarea' ? '文本' : p.type === 'number' ? '数字' : '文本'}</td>
+                                <td>${p.desc}</td>
+                                <td>${p.required ? '<span class="required">必填</span>' : '<span class="optional">可选</span>'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // 构建测试工具
+        let testHtml = '';
+        if (!item.hideTest) {
+            const inputRows = (item.params || []).map((p, idx) => {
+                let inputHtml = '';
+                if (p.type === 'select') {
+                    inputHtml = `<select id="test-in-${p.name}">${p.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+                } else if (p.type === 'checkbox') {
+                    inputHtml = `<input type="checkbox" id="test-in-${p.name}">`;
+                } else if (p.type === 'textarea') {
+                    inputHtml = `<textarea id="test-in-${p.name}" rows="2" placeholder="输入 ${p.name}"></textarea>`;
+                } else if (p.type === 'number') {
+                    inputHtml = `<input type="number" id="test-in-${p.name}" placeholder="数字">`;
+                } else {
+                    inputHtml = `<input type="text" id="test-in-${p.name}" placeholder="输入 ${p.name}">`;
+                }
+                return `
+                    <div class="row">
+                        <label>${p.name}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            }).join('');
+
+            testHtml = `
+                <div class="test-section">
+                    <div style="font-weight:600; color:#1f3a4f; margin-bottom:10px;">在线测试</div>
+                    ${inputRows}
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="testApi(${index})">测试 (${item.method})</button>
+                        <button class="btn btn-outline" onclick="clearResult(${index})">清空</button>
+                    </div>
+                    <div class="result-box" id="test-result-${index}">等待测试...</div>
+                </div>
+            `;
+        }
+
+        // 组装
+        container.innerHTML = `
+            <div class="api-detail">
+                <div class="api-head">
+                    ${item.method ? `<span class="method ${item.method.toLowerCase()}">${item.method}</span>` : ''}
+                    ${item.path ? `<span class="endpoint">${item.path}</span>` : ''}
+                    <span class="api-name">${item.name}</span>
+                </div>
+                <div class="api-desc">${item.desc}</div>
+
+                ${paramsHtml}
+
+                ${item.example ? `
+                    <div style="font-weight:600; color:#1f3a4f; margin-top:12px;">示例</div>
+                    <div class="example-block"><span class="label">请求</span>${item.example}</div>
+                ` : ''}
+
+                ${item.response ? `
+                    <div class="example-block" style="background:#2c3e50;"><span class="label">响应</span>${item.response}</div>
+                ` : ''}
+
+                ${testHtml}
+            </div>
+        `;
+    }
+
+    // ============================================================
+    //  导航函数
+    // ============================================================
+    function navigate(direction) {
+        const newIndex = currentIndex + direction;
+        if (newIndex < 0 || newIndex >= total) return;
+        currentIndex = newIndex;
+        renderDetail(currentIndex);
+        // 滚动到顶部
+        document.getElementById('mainScroll').scrollTop = 0;
+    }
+
+    // 侧边栏点击
+    function navigateTo(id) {
+        const idx = apiData.findIndex(item => item.id === id);
+        if (idx === -1) return;
+        currentIndex = idx;
+        renderDetail(currentIndex);
+        document.getElementById('mainScroll').scrollTop = 0;
+    }
+
+    // ============================================================
+    //  测试功能
+    // ============================================================
+    window.testApi = function(idx) {
+        const item = apiData[idx];
+        const resBox = document.getElementById('test-result-' + idx);
+        if (!resBox) return;
+        resBox.textContent = '请求中...';
+
+        try {
+            const params = {};
+            if (item.params) {
+                item.params.forEach(p => {
+                    const el = document.getElementById('test-in-' + p.name);
+                    if (!el) return;
+                    let val;
+                    if (p.type === 'checkbox') {
+                        val = el.checked;
+                    } else if (p.type === 'number') {
+                        val = parseFloat(el.value) || 0;
+                    } else {
+                        val = el.value || '';
+                    }
+                    if (val !== undefined && val !== '') {
+                        params[p.name] = val;
+                    }
+                });
+            }
+
+            const url = API_BASE + item.path;
+            const opts = { method: item.method, headers: { 'Content-Type': 'application/json' } };
+
+            if (item.method === 'GET') {
+                const qs = new URLSearchParams();
+                for (const k in params) {
+                    const v = params[k];
+                    if (v !== undefined && v !== '' && v !== false) {
+                        qs.append(k, v);
+                    }
+                }
+                const finalUrl = qs.toString() ? url + '?' + qs.toString() : url;
+                fetch(finalUrl)
+                    .then(r => r.json())
+                    .then(data => { resBox.textContent = JSON.stringify(data, null, 2); })
+                    .catch(err => { resBox.textContent = '请求失败：' + err.message; });
+            } else {
+                opts.body = JSON.stringify(params);
+                fetch(url, opts)
+                    .then(r => r.json())
+                    .then(data => { resBox.textContent = JSON.stringify(data, null, 2); })
+                    .catch(err => { resBox.textContent = '请求失败：' + err.message; });
+            }
+        } catch (err) {
+            resBox.textContent = '请求失败：' + err.message;
+        }
+    };
+
+    window.clearResult = function(idx) {
+        const box = document.getElementById('test-result-' + idx);
+        if (box) box.textContent = '等待测试...';
+    };
+
+    // ============================================================
+    //  键盘快捷键
+    // ============================================================
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigate(-1);
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigate(1);
+        }
+    });
+
+    // ============================================================
+    //  初始化
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // 侧边栏点击事件
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const id = this.getAttribute('data-id');
+                if (id) navigateTo(id);
+            });
+        });
+
+        // 默认选中第一个（简介）
+        currentIndex = 0;
+        renderDetail(0);
+    });
+</script>
+</body>
+</html>
