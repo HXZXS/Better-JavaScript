@@ -1,101 +1,318 @@
 # BJS 数据接力 6.0.3.γ
 # 开发者 HXZXS
 
-import sys
-import os
-import json
-import time
-import shutil
-import subprocess
-import urllib.parse
-import urllib.request
-import threading
-import tkinter as tk
+import sys, os, json, time, shutil, subprocess, urllib.parse, urllib.request
+import threading, tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 from datetime import datetime
-import traceback
-import pystray
+import traceback, pystray
 from PIL import Image, ImageDraw, ImageTk
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import webbrowser
-import re
-import hashlib
-import zipfile
-import platform
-import uuid as uuid_lib
-import secrets
+import webbrowser, re, hashlib, zipfile, platform, uuid as uuid_lib, secrets
 from collections import deque
 import logging
 from logging.handlers import RotatingFileHandler
+import tempfile
 
-base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-
+#  路径 
+BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 if os.name == 'nt':
-    user_data = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'BJS')
+    USER_DATA = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'BJS')
 else:
-    user_data = os.path.join(os.path.expanduser('~'), '.config', 'bjs')
-os.makedirs(user_data, exist_ok=True)
+    USER_DATA = os.path.join(os.path.expanduser('~'), '.config', 'bjs')
+os.makedirs(USER_DATA, exist_ok=True)
 
-log_path = os.path.join(user_data, "bjs.log")
-down_dir = os.path.join(user_data, "downloads")
-icon_path = os.path.join(base_dir, "logo.ico")
-if not os.path.exists(icon_path):
-    icon_path = os.path.join(base_dir, "logo.png")
-
-data_dir = os.path.join(user_data, "data")
-tasks_file = os.path.join(data_dir, "tasks.json")
-ver_root = os.path.join(data_dir, "versions")
-watch_cfg_file = os.path.join(data_dir, "watches.json")
-cache_file = os.path.join(data_dir, "license_cache.json")
-
-for d in [down_dir, data_dir, ver_root]:
+LOG_PATH = os.path.join(USER_DATA, "bjs.log")
+DOWNLOAD_DIR = os.path.join(USER_DATA, "downloads")
+ICON_PATH = os.path.join(BASE_DIR, "logo.ico") or os.path.join(BASE_DIR, "logo.png")
+DATA_DIR = os.path.join(USER_DATA, "data")
+TASKS_FILE = os.path.join(DATA_DIR, "tasks.json")
+VERSIONS_ROOT = os.path.join(DATA_DIR, "versions")
+WATCH_CONFIG_FILE = os.path.join(DATA_DIR, "watches.json")
+CACHE_FILE = os.path.join(DATA_DIR, "license_cache.json")
+FIRST_RUN_FLAG = os.path.join(USER_DATA, "first_run.flag")
+for d in [DOWNLOAD_DIR, DATA_DIR, VERSIONS_ROOT]:
     os.makedirs(d, exist_ok=True)
 
-http_port = 8765
-main_root = None
-lc_status = {"valid": False, "key": None, "expire_time": None, "msg": None}
-clip_history = deque(maxlen=100)
-version = "6.0.3.γ"
+HTTP_PORT = 8765
+MAIN_ROOT = None
+LICENSE_STATUS = {"valid": False, "key": None, "expire_time": None, "msg": None}
+CLIPBOARD_HISTORY = deque(maxlen=100)
+VERSION = "6.0.3.γ"
 
+#  更新 
+UPDATE_URL = "https://bjs.rth1.xyz/up.json"
+GITHUB_RELEASES = "https://github.com/HXZXS/Better-JavaScript/releases"
+
+#  日志 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BJS')
 logger.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+fmt = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 console = logging.StreamHandler()
-console.setFormatter(formatter)
+console.setFormatter(fmt)
 logger.addHandler(console)
-if log_path:
-    try:
-        fh = RotatingFileHandler(log_path, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
-    except:
-        pass
+try:
+    fh = RotatingFileHandler(LOG_PATH, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8')
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
+except:
+    pass
 
 def log(msg, level="INFO", extra=None):
     if extra:
         msg += f" | {json.dumps(extra, ensure_ascii=False)}"
-    if level == "ERROR":
-        logger.error(msg)
-    elif level == "WARN":
-        logger.warning(msg)
-    else:
-        logger.info(msg)
+    getattr(logger, level.lower() if level.lower() in ('error','warning','info') else 'info')(msg)
 
-def safe_path(p):
-    if not p:
-        return False
-    p = os.path.normpath(p)
-    if '..' in p or '~' in p:
-        return False
-    forbidden = ['C:\\Windows', 'C:\\System32', 'C:\\Program Files', 'C:\\ProgramData']
-    if os.path.isabs(p):
-        for f in forbidden:
-            if p.lower().startswith(f.lower()):
-                return False
-        return True
-    return '..' not in os.path.abspath(p)
+#  开机自启 
+def setup_autostart():
+    if os.path.exists(FIRST_RUN_FLAG):
+        return
+    try:
+        if os.name == 'nt':
+            import winreg
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Run",
+                0, winreg.KEY_SET_VALUE)
+            exe_path = sys.executable if getattr(sys, 'frozen', False) else sys.argv[0]
+            if getattr(sys, 'frozen', False):
+                cmd = f'"{exe_path}"'
+            else:
+                cmd = f'"{sys.executable}" "{exe_path}"'
+            winreg.SetValueEx(key, "BJSDataRelay", 0, winreg.REG_SZ, cmd)
+            winreg.CloseKey(key)
+            log("开机自启已设置", "INFO")
+        else:
+            autostart_dir = os.path.expanduser("~/.config/autostart")
+            os.makedirs(autostart_dir, exist_ok=True)
+            desktop = os.path.join(autostart_dir, "bjs.desktop")
+            exe_path = sys.executable if getattr(sys, 'frozen', False) else sys.argv[0]
+            if getattr(sys, 'frozen', False):
+                exec_cmd = f'"{exe_path}"'
+            else:
+                exec_cmd = f'"{sys.executable}" "{exe_path}"'
+            content = f"""[Desktop Entry]
+Type=Application
+Name=BJS 数据接力
+Exec={exec_cmd}
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+"""
+            with open(desktop, 'w') as f:
+                f.write(content)
+            log("开机自启已设置 (Linux)", "INFO")
+        with open(FIRST_RUN_FLAG, 'w') as f:
+            f.write('1')
+    except Exception as e:
+        log("设置开机自启失败", "ERROR", {"err": str(e)})
+
+#  召回 
+RECALL_URL = "https://bjs.rth1.xyz/Recall.json"
+KEY_EXE = "BJS developer key.exe"
+UNINS_EXE = "unins000.exe"
+ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+
+def recall_check():
+    try:
+        req = urllib.request.Request(RECALL_URL, headers={'User-Agent': ua})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+            return data.get('code', -1), data.get('recall', ''), data.get('msg', '')
+    except Exception as e:
+        log("召回检查失败", "WARN", {"err": str(e)})
+        return -1, '', str(e)
+
+def handle_recall():
+    code, recall, msg = recall_check()
+    if code != 1:
+        log("无需召回", "INFO")
+        return
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    messagebox.showwarning("召回通告", f"{msg}\n\n程序即将执行召回操作。", parent=root)
+    root.destroy()
+
+    if recall == "main":
+        unins = os.path.join(BASE_DIR, UNINS_EXE)
+        if os.path.exists(unins):
+            log("执行卸载", "INFO", {"path": unins})
+            try:
+                if os.name == 'nt':
+                    subprocess.Popen([unins], shell=True)
+                else:
+                    subprocess.Popen([unins])
+            except Exception as e:
+                log("执行卸载失败", "ERROR", {"err": str(e)})
+        else:
+            log("卸载程序不存在", "WARN", {"path": unins})
+        sys.exit(0)
+    elif recall == "key":
+        key_path = os.path.join(BASE_DIR, KEY_EXE)
+        if os.path.exists(key_path):
+            log("删除卡密服务", "INFO", {"path": key_path})
+            try:
+                os.remove(key_path)
+            except Exception as e:
+                log("删除卡密服务失败", "ERROR", {"err": str(e)})
+        else:
+            log("卡密服务不存在", "WARN", {"path": key_path})
+
+#  更新检查 
+def get_updates():
+    try:
+        req = urllib.request.Request(UPDATE_URL, headers={'User-Agent': ua})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+        ver = data.get('version', '')
+        if ver and ver != VERSION:
+            url = data.get('url', '')
+            msg = data.get('msg', '')
+            if MAIN_ROOT:
+                MAIN_ROOT.after(0, lambda: show_update_win(ver, url, msg))
+        else:
+            log("已是最新版本", "INFO")
+    except Exception as e:
+        log("检查更新失败", "WARN", {"err": str(e)})
+
+def show_update_win(version, url, msg):
+    win = tk.Toplevel(MAIN_ROOT)
+    win.title("发现新版本")
+    win.geometry("460x360")
+    win.resizable(False, False)
+    win.attributes('-topmost', True)
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    x = (win.winfo_screenwidth() - w)//2
+    y = (win.winfo_screenheight() - h)//2
+    win.geometry(f"{w}x{h}+{x}+{y}")
+
+    main = ttk.Frame(win, padding=20)
+    main.pack(fill=tk.BOTH, expand=True)
+
+    ttk.Label(main, text="📦 发现新版本", font=("微软雅黑", 16, "bold"), foreground="#2b6f9e").pack(pady=(0,5))
+    ttk.Label(main, text=f"最新版本: {version}", font=("微软雅黑", 11)).pack(pady=(0,10))
+
+    log_frame = ttk.LabelFrame(main, text="更新日志", padding=8)
+    log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+    log_text = tk.Text(log_frame, height=6, wrap=tk.WORD, font=("微软雅黑", 10))
+    log_text.pack(fill=tk.BOTH, expand=True)
+    if msg:
+        lines = msg.split('|')
+        display = '\n'.join(lines)
+    else:
+        display = "暂无更新日志"
+    log_text.insert('1.0', display)
+    log_text.config(state=tk.DISABLED)
+
+    progress_var = tk.DoubleVar()
+    progress = ttk.Progressbar(main, variable=progress_var, maximum=100, length=350)
+    progress.pack(pady=8)
+    progress.pack_forget()
+
+    status_label = ttk.Label(main, text="", font=("微软雅黑", 9))
+    status_label.pack(pady=(0,5))
+
+    btn_frame = ttk.Frame(main)
+    btn_frame.pack(pady=10)
+
+    def open_github():
+        webbrowser.open(GITHUB_RELEASES)
+
+    def start_download():
+        if not url:
+            messagebox.showerror("错误", "下载地址无效", parent=win)
+            return
+        github_btn.config(state=tk.DISABLED)
+        update_btn.config(state=tk.DISABLED)
+        progress.pack(pady=8)
+        status_label.config(text="正在下载...")
+
+        def download_thread():
+            try:
+                tmp_dir = tempfile.gettempdir()
+                filename = os.path.basename(url) or "bjs_setup.exe"
+                save_path = os.path.join(tmp_dir, filename)
+                def report_hook(block_num, block_size, total_size):
+                    if total_size > 0:
+                        percent = min(100, int(block_num * block_size * 100 / total_size))
+                        progress_var.set(percent)
+                        win.update_idletasks()
+                urllib.request.urlretrieve(url, save_path, reporthook=report_hook)
+                status_label.config(text="下载完成，正在启动安装...")
+                if os.name == 'nt':
+                    subprocess.Popen([save_path], shell=True)
+                else:
+                    subprocess.Popen([save_path])
+                win.after(500, lambda: sys.exit(0))
+            except Exception as e:
+                win.after(0, lambda: messagebox.showerror("下载失败", str(e), parent=win))
+                win.after(0, lambda: status_label.config(text="下载失败"))
+                win.after(0, lambda: github_btn.config(state=tk.NORMAL))
+                win.after(0, lambda: update_btn.config(state=tk.NORMAL))
+                win.after(0, lambda: progress.pack_forget())
+
+        threading.Thread(target=download_thread, daemon=True).start()
+
+    github_btn = ttk.Button(btn_frame, text="GitHub Releases", command=open_github)
+    github_btn.pack(side=tk.LEFT, padx=5)
+    update_btn = ttk.Button(btn_frame, text="立即更新", command=start_download)
+    update_btn.pack(side=tk.LEFT, padx=5)
+    ttk.Button(btn_frame, text="稍后", command=win.destroy).pack(side=tk.LEFT, padx=5)
+
+#  卡密验证 
+LICENSE_SERVER = "https://lckey.rth1.xyz/"
+
+def load_cache():
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+def save_cache(data):
+    try:
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+    except:
+        pass
+
+def online_check(key, device_id):
+    url = f"{LICENSE_SERVER}?key={urllib.parse.quote(key)}&uuid={urllib.parse.quote(device_id)}"
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept': 'application/json'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode())
+            if data.get("code") == 200:
+                expire = data.get("data", {}).get("expireTime")
+                return True, expire, data.get("msg")
+            else:
+                return False, None, data.get("msg")
+    except Exception as e:
+        log("联网验证异常", "ERROR", {"err": str(e)})
+        return False, None, str(e)
+
+def verify_license(key):
+    if not key or not key.strip():
+        return False, {"msg": "卡密为空"}
+    key = key.strip()
+    device_id = get_hardware_id()
+    cache = load_cache()
+    if cache.get("key") == key and cache.get("uuid") == device_id:
+        expire = cache.get("expire_time")
+        if expire and expire > int(time.time() * 1000):
+            log("使用缓存授权", "INFO", {"key": key})
+            return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": "缓存有效"}
+    ok, expire, msg = online_check(key, device_id)
+    if ok and expire and expire > int(time.time() * 1000):
+        save_cache({"key": key, "uuid": device_id, "expire_time": expire, "verified_at": int(time.time())})
+        return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": msg}
+    else:
+        return False, {"msg": msg or "验证失败"}
 
 def get_hardware_id():
     parts = []
@@ -105,28 +322,22 @@ def get_hardware_id():
             c = wmi.WMI()
             for cpu in c.Win32_Processor():
                 if cpu.ProcessorId:
-                    parts.append(f"cpu:{cpu.ProcessorId}")
-                    break
+                    parts.append(f"cpu:{cpu.ProcessorId}"); break
             for board in c.Win32_BaseBoard():
                 if board.SerialNumber and board.SerialNumber.strip():
-                    parts.append(f"board:{board.SerialNumber.strip()}")
-                    break
+                    parts.append(f"board:{board.SerialNumber.strip()}"); break
             for disk in c.Win32_DiskDrive():
                 if disk.SerialNumber and disk.SerialNumber.strip():
-                    parts.append(f"disk:{disk.SerialNumber.strip()}")
-                    break
+                    parts.append(f"disk:{disk.SerialNumber.strip()}"); break
             for bios in c.Win32_BIOS():
                 if bios.SerialNumber and bios.SerialNumber.strip():
-                    parts.append(f"bios:{bios.SerialNumber.strip()}")
-                    break
+                    parts.append(f"bios:{bios.SerialNumber.strip()}"); break
         except:
             try:
                 import winreg
-                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                    r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
                 pid = winreg.QueryValueEx(key, "ProductId")[0]
-                if pid:
-                    parts.append(f"pid:{pid}")
+                if pid: parts.append(f"pid:{pid}")
                 winreg.CloseKey(key)
             except:
                 pass
@@ -134,11 +345,10 @@ def get_hardware_id():
         for p in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
             if os.path.exists(p):
                 try:
-                    with open(p, "r") as f:
+                    with open(p, 'r') as f:
                         mid = f.read().strip()
                         if mid:
-                            parts.append(f"machineid:{mid}")
-                            break
+                            parts.append(f"machineid:{mid}"); break
                 except:
                     pass
     try:
@@ -160,151 +370,85 @@ def get_hardware_id():
     h = hashlib.sha256(raw.encode()).hexdigest()
     return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
 
-lc_server = "https://lckey.rth1.xyz/"
-ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+def is_advanced_allowed():
+    return LICENSE_STATUS.get("valid", False)
 
-def load_cache():
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            pass
-    return {}
-
-def save_cache(data):
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-    except:
-        pass
-
-def verify_license(key, force_remote=False):
-    if not key or not key.strip():
-        return False, {"msg": "卡密为空"}
-    key = key.strip()
+def auth_on_start():
+    cache = load_cache()
+    if not cache.get("key"):
+        log("无缓存卡密", "INFO")
+        return
+    key = cache["key"]
     device_id = get_hardware_id()
-    if not force_remote:
-        cache = load_cache()
-        if cache.get("key") == key and cache.get("uuid") == device_id:
-            expire = cache.get("expire_time")
-            if expire and expire > int(time.time() * 1000):
-                log("使用缓存的授权", "INFO", {"key": key})
-                return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": "缓存有效"}
-    url = f"{lc_server}?key={urllib.parse.quote(key)}&uuid={urllib.parse.quote(device_id)}"
-    log("卡密验证请求", "INFO", {"url": url[:80] + "..."})
+    ok, expire, msg = online_check(key, device_id)
+    if ok and expire and expire > int(time.time() * 1000):
+        LICENSE_STATUS.update({"valid": True, "key": key, "expire_time": expire, "msg": "验证通过"})
+        save_cache({"key": key, "uuid": device_id, "expire_time": expire, "verified_at": int(time.time())})
+        log("启动时卡密验证通过", "INFO", {"key": key})
+    else:
+        LICENSE_STATUS.update({"valid": False, "key": None, "expire_time": None, "msg": "验证失败"})
+        if os.path.exists(CACHE_FILE):
+            try: os.remove(CACHE_FILE)
+            except: pass
+        log("启动时卡密验证失败", "WARN", {"key": key, "msg": msg})
+
+#  卡密服务进程 
+def run_key_exe():
+    key_path = os.path.join(BASE_DIR, KEY_EXE)
+    if not os.path.exists(key_path):
+        log("卡密服务不存在", "WARN", {"path": key_path})
+        return
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept': 'application/json'})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode())
-            if data.get("code") == 200:
-                expire = data.get("data", {}).get("expireTime")
-                cache = {"key": key, "uuid": device_id, "expire_time": expire, "verified_at": int(time.time())}
-                save_cache(cache)
-                return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": data.get("msg")}
-            else:
-                return False, {"code": data.get("code"), "status": data.get("status"), "msg": data.get("msg")}
-    except Exception as e:
-        log("验证请求异常", "ERROR", {"err": str(e)})
-        return False, {"msg": f"网络错误: {str(e)}"}
-
-def is_adv_allowed():
-    return lc_status.get("valid", False)
-
-class LicenseWindow:
-    def __init__(self, master):
-        self.master = master
-        self.result = None
-        self.window = tk.Toplevel(master)
-        self.window.title("BJS 数据接力 · 升级高级版")
-        self.window.geometry("420x260")
-        self.window.resizable(False, False)
-        self.window.attributes('-topmost', True)
-        self.window.update_idletasks()
-        w = self.window.winfo_width()
-        h = self.window.winfo_height()
-        x = (self.window.winfo_screenwidth() - w) // 2
-        y = (self.window.winfo_screenheight() - h) // 2
-        self.window.geometry(f"{w}x{h}+{x}+{y}")
-
-        main = ttk.Frame(self.window, padding=30)
-        main.pack(fill=tk.BOTH, expand=True)
-
-        ttk.Label(main, text="🔑 输入卡密", font=("微软雅黑", 16, "bold"), foreground="#2b6f9e").pack(pady=(0,5))
-        ttk.Label(main, text="粘贴或输入您的卡密，验证通过后解锁高级功能", font=("微软雅黑", 10), foreground="#6a8aa8").pack(pady=(0,20))
-
-        self.key_var = tk.StringVar()
-        entry = ttk.Entry(main, textvariable=self.key_var, font=("Consolas", 13), width=32)
-        entry.pack(fill=tk.X, pady=5, ipady=4)
-        entry.focus_set()
-        entry.bind('<Return>', lambda e: self.do_verify())
-
-        self.msg_var = tk.StringVar()
-        self.msg_label = ttk.Label(main, textvariable=self.msg_var, font=("微软雅黑", 9), foreground="#cc0000")
-        self.msg_label.pack(pady=(6, 12))
-
-        btn_frame = ttk.Frame(main)
-        btn_frame.pack(pady=5)
-        self.verify_btn = ttk.Button(btn_frame, text="✓ 验证卡密", command=self.do_verify, width=14)
-        self.verify_btn.pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="✕ 取消", command=self.cancel, width=10).pack(side=tk.LEFT, padx=5)
-
-        self.processing = False
-        self.window.protocol("WM_DELETE_WINDOW", self.cancel)
-
-    def do_verify(self):
-        if self.processing:
-            return
-        key = self.key_var.get().strip()
-        if not key:
-            self.msg_var.set("请输入卡密")
-            return
-        self.processing = True
-        self.verify_btn.config(state='disabled', text='验证中…')
-        self.msg_var.set("")
-
-        def thread_verify():
-            ok, info = verify_license(key)
-            self.window.after(0, lambda: self.finish(ok, info))
-
-        threading.Thread(target=thread_verify, daemon=True).start()
-
-    def finish(self, ok, info):
-        self.processing = False
-        self.verify_btn.config(state='normal', text='✓ 验证卡密')
-        if ok:
-            self.msg_var.set("✅ 验证通过！")
-            self.msg_label.config(foreground="#00aa00")
-            self.result = {"key": info.get("key"), "expire": info.get("expire_time")}
-            self.window.after(500, self.close)
+        if os.name == 'nt':
+            res = subprocess.run(['tasklist', '/FI', f'IMAGENAME eq {KEY_EXE}'], capture_output=True, text=True, timeout=5)
+            if KEY_EXE.lower() in res.stdout.lower():
+                log("卡密服务已在运行", "INFO")
+                return
         else:
-            code = info.get("code")
-            status = info.get("status")
-            msg = info.get("msg", "验证失败")
-            if code == 403 and status == "black":
-                self.msg_var.set("✗ 卡密已拉黑")
-            elif code == 410 or status == "expired":
-                self.msg_var.set("✗ 卡密已过期")
-            elif code == 403 and status == "bind":
-                self.msg_var.set("✗ 已绑定其他设备")
-            elif code == 404 or status == "invalid":
-                self.msg_var.set("✗ 卡密无效")
-            else:
-                self.msg_var.set(f"✗ {msg}")
-            self.msg_label.config(foreground="#cc0000")
+            res = subprocess.run(['pgrep', '-f', KEY_EXE], capture_output=True, text=True)
+            if res.returncode == 0:
+                log("卡密服务已在运行", "INFO")
+                return
+    except Exception as e:
+        log("检查卡密服务状态失败", "WARN", {"err": str(e)})
+    try:
+        if os.name == 'nt':
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            subprocess.Popen([key_path], startupinfo=si)
+        else:
+            subprocess.Popen([key_path])
+        log("启动卡密服务", "INFO", {"path": key_path})
+    except Exception as e:
+        log("启动卡密服务失败", "ERROR", {"err": str(e)})
 
-    def cancel(self):
-        self.result = None
-        self.close()
+def kill_key_exe():
+    """退出时终止卡密进程"""
+    try:
+        if os.name == 'nt':
+            subprocess.run(['taskkill', '/f', '/im', KEY_EXE], capture_output=True, timeout=5)
+        else:
+            subprocess.run(['pkill', '-f', KEY_EXE], capture_output=True, timeout=5)
+        log("已终止卡密服务", "INFO")
+    except Exception as e:
+        log("终止卡密服务失败", "WARN", {"err": str(e)})
 
-    def close(self):
-        self.window.destroy()
+#  安全路径 
+def safe_path(p):
+    if not p:
+        return False
+    p = os.path.normpath(p)
+    if '..' in p or '~' in p:
+        return False
+    forbidden = ['C:\\Windows', 'C:\\System32', 'C:\\Program Files', 'C:\\ProgramData']
+    if os.path.isabs(p):
+        for f in forbidden:
+            if p.lower().startswith(f.lower()):
+                return False
+        return True
+    return '..' not in os.path.abspath(p)
 
-    def run(self):
-        self.window.grab_set()
-        self.window.wait_window()
-        return self.result
-
+#  对话框 
 class DialogBox:
     def __init__(self, master, cfg):
         self.master = master
@@ -439,12 +583,103 @@ def show_dialog(cfg):
     try:
         if isinstance(cfg, str):
             cfg = json.loads(cfg)
-        dlg = DialogBox(main_root, cfg)
+        dlg = DialogBox(MAIN_ROOT, cfg)
         return dlg.run()
     except Exception as e:
         log("对话框异常", "ERROR", {"err": str(e)})
         return None
 
+#  卡密输入窗口 
+class LicenseWindow:
+    def __init__(self, master):
+        self.master = master
+        self.result = None
+        self.window = tk.Toplevel(master)
+        self.window.title("BJS 数据接力 · 升级高级版")
+        self.window.geometry("420x260")
+        self.window.resizable(False, False)
+        self.window.attributes('-topmost', True)
+        self.window.update_idletasks()
+        w, h = self.window.winfo_width(), self.window.winfo_height()
+        x = (self.window.winfo_screenwidth() - w)//2
+        y = (self.window.winfo_screenheight() - h)//2
+        self.window.geometry(f"{w}x{h}+{x}+{y}")
+
+        main = ttk.Frame(self.window, padding=30)
+        main.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(main, text="🔑 输入卡密", font=("微软雅黑", 16, "bold"), foreground="#2b6f9e").pack(pady=(0,5))
+        ttk.Label(main, text="粘贴或输入您的卡密，验证通过后解锁高级功能", font=("微软雅黑", 10), foreground="#6a8aa8").pack(pady=(0,20))
+
+        self.key_var = tk.StringVar()
+        entry = ttk.Entry(main, textvariable=self.key_var, font=("Consolas", 13), width=32)
+        entry.pack(fill=tk.X, pady=5, ipady=4)
+        entry.focus_set()
+        entry.bind('<Return>', lambda e: self.do_verify())
+
+        self.msg_var = tk.StringVar()
+        self.msg_label = ttk.Label(main, textvariable=self.msg_var, font=("微软雅黑", 9), foreground="#cc0000")
+        self.msg_label.pack(pady=(6, 12))
+
+        btn_frame = ttk.Frame(main)
+        btn_frame.pack(pady=5)
+        self.verify_btn = ttk.Button(btn_frame, text="✓ 验证卡密", command=self.do_verify, width=14)
+        self.verify_btn.pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="✕ 取消", command=self.cancel, width=10).pack(side=tk.LEFT, padx=5)
+
+        self.processing = False
+        self.window.protocol("WM_DELETE_WINDOW", self.cancel)
+
+    def do_verify(self):
+        if self.processing:
+            return
+        key = self.key_var.get().strip()
+        if not key:
+            self.msg_var.set("请输入卡密")
+            return
+        self.processing = True
+        self.verify_btn.config(state='disabled', text='验证中…')
+        self.msg_var.set("")
+        def thread_verify():
+            ok, info = verify_license(key)
+            self.window.after(0, lambda: self.finish(ok, info))
+        threading.Thread(target=thread_verify, daemon=True).start()
+
+    def finish(self, ok, info):
+        self.processing = False
+        self.verify_btn.config(state='normal', text='✓ 验证卡密')
+        if ok:
+            self.msg_var.set("✅ 验证通过！")
+            self.msg_label.config(foreground="#00aa00")
+            self.result = {"key": info.get("key"), "expire": info.get("expire_time")}
+            self.window.after(500, self.close)
+        else:
+            code = info.get("code")
+            status = info.get("status")
+            msg = info.get("msg", "验证失败")
+            if code == 403 and status == "black":
+                self.msg_var.set("✗ 卡密已拉黑")
+            elif code == 410 or status == "expired":
+                self.msg_var.set("✗ 卡密已过期")
+            elif code == 403 and status == "bind":
+                self.msg_var.set("✗ 已绑定其他设备")
+            elif code == 404 or status == "invalid":
+                self.msg_var.set("✗ 卡密无效")
+            else:
+                self.msg_var.set(f"✗ {msg}")
+            self.msg_label.config(foreground="#cc0000")
+
+    def cancel(self):
+        self.result = None
+        self.close()
+    def close(self):
+        self.window.destroy()
+    def run(self):
+        self.window.grab_set()
+        self.window.wait_window()
+        return self.result
+
+#  基础API函数 
 def open_path(path):
     if not path or not safe_path(path):
         return {"code": -1, "msg": "路径无效"}
@@ -475,7 +710,7 @@ def show_msg(text, typ="info", title="来自网页", image=None, w=0, h=0):
         cfg = {'title': title, 'width': w or 500, 'height': h or 400,
                'controls': [{'type': 'image', 'src': image}, {'type': 'label', 'text': text}], 'buttons': ['确定']}
         return {"code": 0, "data": show_dialog(cfg)}
-    top = tk.Toplevel(main_root)
+    top = tk.Toplevel(MAIN_ROOT)
     top.attributes('-topmost', True)
     top.withdraw()
     funcs = {'info': messagebox.showinfo, 'warning': messagebox.showwarning, 'error': messagebox.showerror,
@@ -490,6 +725,7 @@ def show_msg(text, typ="info", title="来自网页", image=None, w=0, h=0):
         top.destroy()
         return {"code": 0}
 
+#  文件操作 
 def list_dir(path):
     if not path or not safe_path(path) or not os.path.isdir(path):
         return {"code": -1, "msg": "无效目录"}
@@ -566,9 +802,9 @@ def move_path(src, dst):
 
 def get_log(lines=100):
     try:
-        if not os.path.exists(log_path):
+        if not os.path.exists(LOG_PATH):
             return {"code": 0, "data": "日志文件尚未生成。"}
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with open(LOG_PATH, 'r', encoding='utf-8') as f:
             all_lines = f.readlines()
         return {"code": 0, "data": ''.join(all_lines[-lines:])}
     except:
@@ -592,7 +828,7 @@ def lanzou_dl(url, pwd='', save_path=''):
         qs = urllib.parse.parse_qs(parsed.query)
         filename = qs.get('fileName', [qs.get('filename', [name])[0]])[0] or 'downloaded_file'
         if not save_path:
-            save_path = os.path.join(down_dir, filename)
+            save_path = os.path.join(DOWNLOAD_DIR, filename)
         elif os.path.isdir(save_path):
             save_path = os.path.join(save_path, filename)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -604,177 +840,57 @@ def lanzou_dl(url, pwd='', save_path=''):
     except Exception as e:
         return False, None, None, str(e)
 
-# 启动辅助
-def is_process_running(name):
-    if os.name != 'nt':
-        return False
-    try:
-        result = subprocess.run(['tasklist', '/FI', f'IMAGENAME eq {name}'], capture_output=True, text=True, timeout=5)
-        lines = result.stdout.splitlines()
-        for line in lines:
-            if name.lower() in line.lower() and not line.strip().startswith('Image Name'):
-                return True
-        return False
-    except:
-        return False
-
-def check_recall(root):
-    url = "https://bjs.rth1.xyz/Recall.json"
-    try:
-        req = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept': 'application/json'})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read().decode())
-            code = data.get('code', -1)
-            recall = data.get('recall', '0')
-            msg = data.get('msg', '')
-            if code == 0 and recall == '0':
-                log("召回检查正常", "INFO")
-                return "normal"
-            elif code == 1 and recall == 'main':
-                if msg:
-                    messagebox.showinfo("召回通告", msg, parent=root)
-                unins = os.path.join(base_dir, "unins000.exe")
-                if os.path.exists(unins):
-                    log("执行召回卸载", "INFO", {"path": unins})
-                    subprocess.Popen([unins])
-                else:
-                    log("未找到unins000.exe", "ERROR", {"path": unins})
-                return "exit"
-            elif code == 1 and recall == 'key':
-                if msg:
-                    messagebox.showinfo("召回通告", msg, parent=root)
-                key_exe = os.path.join(base_dir, "BJS developer key.exe")
-                if os.path.exists(key_exe):
-                    try:
-                        os.remove(key_exe)
-                        log("已删除卡密程序", "INFO", {"path": key_exe})
-                    except Exception as e:
-                        log("删除卡密程序失败", "ERROR", {"err": str(e)})
-                else:
-                    log("卡密程序不存在，无需删除", "WARN")
-                return "continue"
-            else:
-                log("召回检查未知响应", "WARN", {"data": data})
-                return "normal"
-    except Exception as e:
-        log("召回检查异常", "ERROR", {"err": str(e)})
-        return "normal"
-
-def verify_cached_license():
-    cache = load_cache()
-    key = cache.get("key")
-    if not key:
-        lc_status.update({"valid": False, "key": None, "expire_time": None, "msg": None})
-        log("无缓存卡密", "INFO")
-        return
-    log("开始强制远程验证缓存卡密", "INFO", {"key": key})
-    ok, info = verify_license(key, force_remote=True)
-    if ok:
-        lc_status.update({"valid": True, "key": key, "expire_time": info.get("expire_time"), "msg": info.get("msg")})
-        log("缓存卡密远程验证通过", "INFO")
-    else:
-        log("缓存卡密远程验证失败，清除缓存", "WARN", {"msg": info.get("msg")})
-        lc_status.update({"valid": False, "key": None, "expire_time": None, "msg": None})
-        if os.path.exists(cache_file):
-            try:
-                os.remove(cache_file)
-            except Exception as e:
-                log("清除缓存文件失败", "ERROR", {"err": str(e)})
-
-def ensure_key_exe_running():
-    key_exe = os.path.join(base_dir, "BJS developer key.exe")
-    if not os.path.exists(key_exe):
-        log("卡密程序不存在，跳过启动", "WARN")
-        return
-    if is_process_running("BJS developer key.exe"):
-        log("卡密程序已在运行", "INFO")
-        return
-    try:
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            subprocess.Popen([key_exe], startupinfo=startupinfo)
-        else:
-            subprocess.Popen([key_exe])
-        log("启动卡密程序", "INFO", {"path": key_exe})
-    except Exception as e:
-        log("启动卡密程序失败", "ERROR", {"err": str(e)})
-
-def add_startup_entry():
-    flag_file = os.path.join(user_data, "first_run.flag")
-    if os.path.exists(flag_file):
-        return
-    try:
-        with open(flag_file, 'w') as f:
-            f.write('1')
-        if os.name == 'nt':
-            import winreg
-            key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-            try:
-                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
-                if getattr(sys, 'frozen', False):
-                    cmd = f'"{sys.executable}"'
-                else:
-                    cmd = f'"{sys.executable}" "{os.path.abspath(sys.argv[0])}"'
-                winreg.SetValueEx(key, "BJS Data Relay", 0, winreg.REG_SZ, cmd)
-                winreg.CloseKey(key)
-                log("已添加开机自启", "INFO", {"cmd": cmd})
-            except Exception as e:
-                log("添加开机自启失败", "ERROR", {"err": str(e)})
-    except Exception as e:
-        log("首次运行标记失败", "ERROR", {"err": str(e)})
-
-# 高级功能依赖检查
-adv_available = True
+#  高级功能（依赖检查） 
+ADVANCED_AVAILABLE = True
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
 except ImportError:
-    adv_available = False
+    ADVANCED_AVAILABLE = False
     log("APScheduler未安装，定时任务功能禁用", "WARN")
 
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
 except ImportError:
-    adv_available = False
+    ADVANCED_AVAILABLE = False
     log("Watchdog未安装，文件监听功能禁用", "WARN")
 
 def check_license():
-    if not is_adv_allowed():
+    if not is_advanced_allowed():
         return {"code": 403, "msg": "需要卡密激活", "status": "license_required"}
     return None
 
-if adv_available:
+if ADVANCED_AVAILABLE:
     scheduler = BackgroundScheduler()
     scheduler.start()
     observer = None
     watch_handlers = {}
 
     def load_tasks():
-        if os.path.exists(tasks_file):
+        if os.path.exists(TASKS_FILE):
             try:
-                with open(tasks_file, 'r', encoding='utf-8') as f:
+                with open(TASKS_FILE, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except:
                 pass
         return {}
 
     def save_tasks(tasks):
-        with open(tasks_file, 'w', encoding='utf-8') as f:
+        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
             json.dump(tasks, f, indent=2)
 
     def load_watches():
-        if os.path.exists(watch_cfg_file):
+        if os.path.exists(WATCH_CONFIG_FILE):
             try:
-                with open(watch_cfg_file, 'r', encoding='utf-8') as f:
+                with open(WATCH_CONFIG_FILE, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except:
                 pass
         return {}
 
     def save_watches(watches):
-        with open(watch_cfg_file, 'w', encoding='utf-8') as f:
+        with open(WATCH_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(watches, f, indent=2)
 
     def execute_task(name):
@@ -796,14 +912,12 @@ if adv_available:
             self.filter_ext = config.get("filter", "*").strip()
             self.action = config.get("action")
             self.target = config.get("target")
-
         def on_created(self, event):
             if not event.is_directory:
                 self.process(event.src_path)
         def on_modified(self, event):
             if not event.is_directory:
                 self.process(event.src_path)
-
         def process(self, path):
             if self.filter_ext != "*" and not path.endswith(self.filter_ext):
                 return
@@ -846,7 +960,7 @@ if adv_available:
         if not os.path.exists(path) or os.path.isdir(path):
             return
         rel = os.path.abspath(path).replace(":", "").replace("\\", "/")
-        ver_dir = os.path.join(ver_root, hashlib.md5(rel.encode()).hexdigest()[:16])
+        ver_dir = os.path.join(VERSIONS_ROOT, hashlib.md5(rel.encode()).hexdigest()[:16])
         os.makedirs(ver_dir, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
         ver_file = os.path.join(ver_dir, f"{ts}_{os.path.basename(path)}")
@@ -856,7 +970,7 @@ if adv_available:
         except Exception as e:
             log("保存版本失败", "ERROR", {"err": str(e)})
 
-# 高级功能函数
+#  高级功能函数 
 def batch_rename(path, pattern, replacement, preview=True):
     err = check_license()
     if err: return err
@@ -899,21 +1013,21 @@ def sync_dirs(src, dest, mode="mirror", exclude=None):
     except Exception as e:
         return {"code": -1, "msg": str(e)}
 
-def get_clip_history(limit=50):
+def get_clipboard_history(limit=50):
     err = check_license()
     if err: return err
-    history = list(clip_history)
+    history = list(CLIPBOARD_HISTORY)
     if limit:
         history = history[-limit:]
     return {"code": 0, "data": history}
 
-def restore_clip(index):
+def restore_clipboard(index):
     err = check_license()
     if err: return err
     try:
         idx = int(index)
-        if 0 <= idx < len(clip_history):
-            return {"code": 0, "data": clip_history[idx]}
+        if 0 <= idx < len(CLIPBOARD_HISTORY):
+            return {"code": 0, "data": CLIPBOARD_HISTORY[idx]}
         return {"code": -1, "msg": "索引无效"}
     except:
         return {"code": -1, "msg": "索引格式错误"}
@@ -999,9 +1113,9 @@ def create_archive(sources, target, format="zip", password=None):
 def share_path(path, expires_in=3600, readonly=True):
     err = check_license()
     if err: return err
-    return {"code": 0, "data": {"url": f"http://127.0.0.1:{http_port}/share/placeholder"}}
+    return {"code": 0, "data": {"url": f"http://127.0.0.1:{HTTP_PORT}/share/placeholder"}}
 
-def gen_remote_token(expires_in=300, permissions=None):
+def generate_remote_token(expires_in=300, permissions=None):
     err = check_license()
     if err: return err
     token = secrets.token_hex(8)
@@ -1032,7 +1146,7 @@ def exec_script(script, timeout=10):
     except Exception as e:
         return {"code": -1, "msg": str(e)}
 
-if adv_available:
+if ADVANCED_AVAILABLE:
     def schedule_task(name, trigger, expression, action, params):
         err = check_license()
         if err: return err
@@ -1069,7 +1183,7 @@ if adv_available:
         if err: return err
         if not os.path.exists(path):
             return {"code": -1, "msg": "文件不存在"}
-        ver_dir = os.path.join(ver_root, hashlib.md5(os.path.abspath(path).replace(":", "").replace("\\", "/").encode()).hexdigest()[:16])
+        ver_dir = os.path.join(VERSIONS_ROOT, hashlib.md5(os.path.abspath(path).replace(":", "").replace("\\", "/").encode()).hexdigest()[:16])
         if not os.path.isdir(ver_dir):
             return {"code": 0, "data": []}
         versions = []
@@ -1092,7 +1206,7 @@ if adv_available:
         if err: return err
         if not os.path.exists(path):
             return {"code": -1, "msg": "文件不存在"}
-        ver_dir = os.path.join(ver_root, hashlib.md5(os.path.abspath(path).replace(":", "").replace("\\", "/").encode()).hexdigest()[:16])
+        ver_dir = os.path.join(VERSIONS_ROOT, hashlib.md5(os.path.abspath(path).replace(":", "").replace("\\", "/").encode()).hexdigest()[:16])
         if not os.path.isdir(ver_dir):
             return {"code": -1, "msg": "没有版本记录"}
         for f in os.listdir(ver_dir):
@@ -1104,7 +1218,7 @@ if adv_available:
                     return {"code": -1, "msg": str(e)}
         return {"code": -1, "msg": f"未找到版本 {version}"}
 
-# Flask 应用
+#  Flask 应用 
 app = Flask(__name__)
 CORS(app)
 
@@ -1119,7 +1233,7 @@ def log_response(response):
 
 @app.route('/health')
 def health():
-    return jsonify({"code": 0, "status": "running", "port": http_port})
+    return jsonify({"code": 0, "status": "running", "port": HTTP_PORT})
 
 @app.route('/api/open')
 def api_open():
@@ -1197,15 +1311,15 @@ def sysinfo():
 
 @app.route('/api/license/status')
 def api_license_status():
-    return jsonify({"code": 0, "data": lc_status})
+    return jsonify({"code": 0, "data": LICENSE_STATUS})
 
 @app.route('/api/license/verify', methods=['POST'])
 def api_license_verify():
     key = (request.json or {}).get('key', '')
     ok, info = verify_license(key)
     if ok:
-        lc_status.update({"valid": True, "key": key, "expire_time": info.get("expire_time"), "msg": info.get("msg")})
-        return jsonify({"code": 0, "data": lc_status})
+        LICENSE_STATUS.update({"valid": True, "key": key, "expire_time": info.get("expire_time"), "msg": info.get("msg")})
+        return jsonify({"code": 0, "data": LICENSE_STATUS})
     else:
         return jsonify({"code": -1, "msg": info.get("msg", "验证失败")})
 
@@ -1224,7 +1338,7 @@ def api_sync():
 
 @app.route('/api/advanced/schedule', methods=['POST'])
 def api_schedule():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return advanced_unavailable()
     data = request.json or {}
     return jsonify(schedule_task(data.get('name', ''), data.get('trigger', 'cron'), data.get('expression', ''),
@@ -1232,15 +1346,15 @@ def api_schedule():
 
 @app.route('/api/advanced/clipboard/history')
 def api_clipboard_history():
-    return jsonify(get_clip_history(request.args.get('limit', 50, type=int)))
+    return jsonify(get_clipboard_history(request.args.get('limit', 50, type=int)))
 
 @app.route('/api/advanced/clipboard/restore', methods=['POST'])
 def api_clipboard_restore():
-    return jsonify(restore_clip((request.json or {}).get('index')))
+    return jsonify(restore_clipboard((request.json or {}).get('index')))
 
 @app.route('/api/advanced/watch', methods=['POST'])
 def api_watch():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return advanced_unavailable()
     data = request.json or {}
     return jsonify(watch_folder(data.get('path', ''), data.get('events', ['create']), data.get('filter', '*'),
@@ -1253,13 +1367,13 @@ def api_search():
 
 @app.route('/api/advanced/versions')
 def api_versions():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return advanced_unavailable()
     return jsonify(get_file_versions(request.args.get('path', '')))
 
 @app.route('/api/advanced/versions/restore', methods=['POST'])
 def api_restore_version():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return advanced_unavailable()
     data = request.json or {}
     return jsonify(restore_version(data.get('path', ''), data.get('version', '')))
@@ -1287,7 +1401,7 @@ def api_share():
 @app.route('/api/advanced/remote/token', methods=['POST'])
 def api_remote_token():
     data = request.json or {}
-    return jsonify(gen_remote_token(data.get('expires_in', 300), data.get('permissions', [])))
+    return jsonify(generate_remote_token(data.get('expires_in', 300), data.get('permissions', [])))
 
 @app.route('/api/advanced/sync/device', methods=['POST'])
 def api_sync_device():
@@ -1311,18 +1425,18 @@ def api_exec_script():
 
 @app.route('/api/advanced/watch/stop', methods=['POST'])
 def api_stop_watch():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return advanced_unavailable()
     path = (request.json or {}).get('path', '')
     if stop_watch(path):
         return jsonify({"code": 0, "msg": "已停止监听"})
     return jsonify({"code": -1, "msg": "该路径未在监听"})
 
-# 托盘
+#  托盘 
 def get_icon():
-    if os.path.exists(icon_path):
+    if os.path.exists(ICON_PATH):
         try:
-            return Image.open(icon_path)
+            return Image.open(ICON_PATH)
         except:
             pass
     img = Image.new('RGB', (64,64), (52,152,219))
@@ -1330,7 +1444,7 @@ def get_icon():
     return img
 
 def show_license_window():
-    win = LicenseWindow(main_root)
+    win = LicenseWindow(MAIN_ROOT)
     result = win.run()
     if result and result.get("key"):
         global tray_icon
@@ -1338,27 +1452,27 @@ def show_license_window():
             tray_icon.stop()
             tray_icon = None
         create_tray_icon()
-        messagebox.showinfo("升级成功", "高级功能已解锁！", parent=main_root)
+        messagebox.showinfo("升级成功", "高级功能已解锁！", parent=MAIN_ROOT)
         log("用户通过托盘升级高级版", "INFO", {"key": result["key"]})
     else:
         log("用户取消升级", "INFO")
 
 def on_tray_click(icon, item):
-    if lc_status.get("valid"):
-        messagebox.showinfo("提示", "您已是高级版用户", parent=main_root)
+    if LICENSE_STATUS.get("valid"):
+        messagebox.showinfo("提示", "您已是高级版用户", parent=MAIN_ROOT)
     else:
         show_license_window()
 
 def create_tray_icon():
     global tray_icon
-    if lc_status.get("valid"):
+    if LICENSE_STATUS.get("valid"):
         menu_text = "💎 高级版"
     else:
         menu_text = "📦 标准版 「点击升级」"
-
     menu = pystray.Menu(
-        pystray.MenuItem(f"BJS {version}", None, enabled=False),
+        pystray.MenuItem(f"📌 BJS {VERSION}", None, enabled=False),
         pystray.MenuItem(menu_text, on_tray_click),
+        pystray.MenuItem("🔄 检查更新", lambda icon, item: threading.Thread(target=get_updates, daemon=True).start()),
         pystray.MenuItem("📄 查看日志", on_view_log),
         pystray.MenuItem("ℹ️ 关于", on_about),
         pystray.MenuItem("🚪 退出", on_exit)
@@ -1367,11 +1481,11 @@ def create_tray_icon():
     tray_icon.run()
 
 def on_view_log(icon, item):
-    if os.path.exists(log_path):
-        os.startfile(log_path)
+    if os.path.exists(LOG_PATH):
+        os.startfile(LOG_PATH)
 
 def on_about(icon, item):
-    win = tk.Toplevel(main_root)
+    win = tk.Toplevel(MAIN_ROOT)
     win.title("关于")
     win.geometry("420x420")
     win.attributes('-topmost', True)
@@ -1380,9 +1494,9 @@ def on_about(icon, item):
     main = ttk.Frame(win, padding=30)
     main.pack(fill=tk.BOTH, expand=True)
     ttk.Label(main, text="BJS 数据接力", font=("微软雅黑", 20, "bold"), foreground="#2b6f9e").pack(pady=(0,5))
-    ttk.Label(main, text=f"版本 {version}", font=("微软雅黑", 12)).pack(pady=(0,5))
-    status = "✓ 高级版" if lc_status.get("valid") else "标准版 (免费)"
-    ttk.Label(main, text=status, font=("微软雅黑", 10), foreground="#00aa00" if lc_status.get("valid") else "#888").pack(pady=(0,15))
+    ttk.Label(main, text=f"版本 {VERSION}", font=("微软雅黑", 12)).pack(pady=(0,5))
+    status = "✓ 高级版" if LICENSE_STATUS.get("valid") else "标准版 (免费)"
+    ttk.Label(main, text=status, font=("微软雅黑", 10), foreground="#00aa00" if LICENSE_STATUS.get("valid") else "#888").pack(pady=(0,15))
     ttk.Separator(main).pack(fill=tk.X, pady=10)
     ttk.Label(main, text="开发者：HXZXS").pack(pady=5)
     ttk.Separator(main).pack(fill=tk.X, pady=10)
@@ -1393,17 +1507,20 @@ def on_about(icon, item):
     ttk.Button(main, text="关闭", command=win.destroy).pack(pady=15)
 
 def on_exit(icon, item):
+    # 终止卡密服务
+    kill_key_exe()
     icon.stop()
     os._exit(0)
 
 def start_http():
     try:
-        app.run(host='127.0.0.1', port=http_port, debug=False, use_reloader=False)
+        app.run(host='127.0.0.1', port=HTTP_PORT, debug=False, use_reloader=False)
     except Exception as e:
         log("HTTP启动失败", "ERROR", {"err": str(e)})
 
+#  启动加载持久化任务 
 def load_scheduled_tasks():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return
     tasks = load_tasks()
     for name, cfg in tasks.items():
@@ -1419,44 +1536,47 @@ def load_scheduled_tasks():
                     log("加载任务失败", "ERROR", {"name": name, "err": str(e)})
 
 def load_watch_handlers():
-    if not adv_available:
+    if not ADVANCED_AVAILABLE:
         return
     watches = load_watches()
     for path, cfg in watches.items():
         if cfg.get("active", True) and os.path.isdir(path):
             start_watch(path, cfg)
 
+#  入口 
 if __name__ == "__main__":
+    # 召回
+    handle_recall()
+
     root = tk.Tk()
     root.withdraw()
     root.attributes('-topmost', True)
-    main_root = root
+    MAIN_ROOT = root
 
-    # 召回检查
-    recall_action = check_recall(root)
-    if recall_action == "exit":
-        sys.exit(0)
+    # 卡密验证（联网）
+    auth_on_start()
 
-    # 强制远程验证缓存卡密
-    verify_cached_license()
+    # 首次运行开机自启
+    setup_autostart()
 
-    # 确保 key.exe 运行
-    ensure_key_exe_running()
+    # 检查更新（非阻塞）
+    threading.Thread(target=get_updates, daemon=True).start()
 
-    # 首次运行添加开机自启
-    add_startup_entry()
+    # 启动卡密服务
+    run_key_exe()
 
-    # 加载定时任务和监听
+    # 加载持久化任务
     load_scheduled_tasks()
     load_watch_handlers()
 
-    # 启动 HTTP 和托盘
+    # 启动服务
     threading.Thread(target=start_http, daemon=True).start()
     threading.Thread(target=create_tray_icon, daemon=True).start()
-    log("BJS 数据接力启动", "INFO", {"version": version})
+    log("BJS 数据接力启动", "INFO", {"version": VERSION})
     root.mainloop()
 
-    if adv_available:
+    # 清理
+    if ADVANCED_AVAILABLE:
         scheduler.shutdown()
         if observer:
             observer.stop()
