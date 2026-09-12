@@ -44,9 +44,33 @@ BJS Data Relay 在本地起一个 HTTP 服务。网页发请求，它执行对�
 ### 一键部署
 按 Windows+R 启动 [运行]
 
-`powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/setup' -Out $f;&$f"`
+```powershell
+powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/setup' -Out $f;&$f"`
+```
 
 运行部署脚本
+
+
+### 使用代理一键部署
+用于无法直接访问GitHub人群
+
+**先以管理员身份打开 PowerShell**，然后粘贴执行：
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; iwr 'https://bjs.r.shortio.cn/proxy' -Out $f -UseBasicParsing; if ((Get-FileHash $f -Algorithm SHA256).Hash -eq 'C44CCE8550252827629986CBCCFCDE8C48A1FC9E40C833C39503D087D9DFEBA0') { & $f } else { Write-Host 'HASH MISMATCH' -ForegroundColor Red; Pause }
+```
+
+
+---
+
+### 说明
+
+| 版本 | 运行方式 | 哈希校验 | 备注 |
+| :--- | :--- | :--- | :--- |
+| GitHub 原版 | Windows+R | 否 | 源可控，确保安全 |
+| 代理下载版 | 管理员 PowerShell | 是 | 第三方代理+哈希校验，确保安全性 |
+
+两条命令最终执行的都是同一个 `PS-Setup.ps1`，脚本内部的提权逻辑会在非管理员环境下自动请求 UAC，因此 GitHub 原版从 Windows+R 启动也能正常完成安装。
 ### 或
 
 从[Releases](https://github.com/HXZXS/Better-JavaScript/releases) 下载最新的安装程序。
