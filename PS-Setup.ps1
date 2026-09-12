@@ -8,7 +8,7 @@ $LaunchAfterInstall = $true
 $DownloadUrls = @(
     'https://tvv.tw/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://ghf.无名氏.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
-        'https://github.tbap.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
+    'https://github.tbap.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://ghfile.geekertao.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh.927223.xyz/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh-proxy.com/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
