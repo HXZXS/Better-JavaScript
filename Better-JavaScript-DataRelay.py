@@ -1,4 +1,4 @@
-# BJS 数据接力 6.0.5.α
+# BJS 数据接力 6.0.4.β
 # HXZXS
 
 import sys, os, json, time, shutil, subprocess, urllib.parse, urllib.request
@@ -63,7 +63,7 @@ HTTP_PORT = 8765
 MAIN_ROOT = None
 LICENSE_STATUS = {"valid": False, "key": None, "expire_time": None, "msg": None}
 CLIPBOARD_HISTORY = deque(maxlen=100)
-VERSION = "6.0.4.α"
+VERSION = "6.0.4.β"
 
 OFFLINE_BLOCK = True
 NOTICE_URL = "https://bjs.rth1.xyz/notice.json"
@@ -348,7 +348,6 @@ def show_force_notice(level, msg, seconds, blink=False):
 
 
 def show_notice_detail(msg, level='D'):
-    """D 级公告详情窗口"""
     if not msg:
         return
     try:
@@ -525,7 +524,8 @@ def online_check(key, device_id):
         return False, None, data.get("msg")
     except Exception as e:
         log("联网验证异常", "ERROR", {"err": str(e)})
-        return False, None, str(e)
+        # 网络错误用特殊标记，避免误删缓存
+        return False, None, f"__NETWORK_ERROR__:{e}"
 
 
 def get_hardware_id():
@@ -584,19 +584,38 @@ def get_hardware_id():
     return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
 
 
+def _apply_license(key, expire, msg):
+    """统一更新全局授权状态的入口"""
+    LICENSE_STATUS.update({
+        "valid": True,
+        "key": key,
+        "expire_time": expire,
+        "msg": msg or "验证通过"
+    })
+
+
 def verify_license(key):
+    """验证卡密。验证成功会同步更新 LICENSE_STATUS。"""
     if not key or not key.strip():
         return False, {"msg": "卡密为空"}
     key = key.strip()
     device_id = get_hardware_id()
+
+    # 缓存命中
     cache = load_cache()
     if cache.get("key") == key and cache.get("uuid") == device_id:
         expire = cache.get("expire_time")
         if expire and expire > int(time.time() * 1000):
-            return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": "缓存有效"}
+            _apply_license(key, expire, "缓存有效")
+            return True, {"key": key, "uuid": device_id,
+                          "expire_time": expire, "msg": "缓存有效"}
+
+    # 联网校验
     ok, expire, msg = online_check(key, device_id)
     if ok and expire and expire > int(time.time() * 1000):
-        save_cache({"key": key, "uuid": device_id, "expire_time": expire, "verified_at": int(time.time())})
+        save_cache({"key": key, "uuid": device_id,
+                    "expire_time": expire, "verified_at": int(time.time())})
+        _apply_license(key, expire, msg)
         return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": msg}
     return False, {"msg": msg or "验证失败"}
 
@@ -606,22 +625,42 @@ def is_advanced_allowed():
 
 
 def auth_on_start():
+    """启动时恢复授权状态。优先用本地缓存，网络错误不删缓存。"""
     cache = load_cache()
     if not cache.get("key"):
         return
     key = cache["key"]
     device_id = get_hardware_id()
+
+    # 1) 本地缓存优先
+    if cache.get("uuid") == device_id:
+        expire = cache.get("expire_time")
+        if expire and expire > int(time.time() * 1000):
+            _apply_license(key, expire, "缓存有效")
+            log("启动时使用缓存授权", "INFO", {"key": key})
+            return
+
+    # 2) 缓存无效，联网校验
     ok, expire, msg = online_check(key, device_id)
     if ok and expire and expire > int(time.time() * 1000):
-        LICENSE_STATUS.update({"valid": True, "key": key, "expire_time": expire, "msg": "验证通过"})
-        save_cache({"key": key, "uuid": device_id, "expire_time": expire, "verified_at": int(time.time())})
+        _apply_license(key, expire, "验证通过")
+        save_cache({"key": key, "uuid": device_id,
+                    "expire_time": expire, "verified_at": int(time.time())})
         log("启动卡密验证通过", "INFO", {"key": key})
+        return
+
+    # 3) 只有明确失败才删缓存；网络错误保留
+    if msg and str(msg).startswith("__NETWORK_ERROR__"):
+        LICENSE_STATUS.update({"valid": False, "key": None,
+                               "expire_time": None, "msg": "网络错误，暂时无法验证"})
+        log("启动卡密验证网络错误，保留缓存", "WARN", {"key": key, "msg": msg})
     else:
-        LICENSE_STATUS.update({"valid": False, "key": None, "expire_time": None, "msg": "验证失败"})
+        LICENSE_STATUS.update({"valid": False, "key": None,
+                               "expire_time": None, "msg": msg or "验证失败"})
         if os.path.exists(CACHE_FILE):
             try: os.remove(CACHE_FILE)
             except Exception: pass
-        log("启动卡密验证失败", "WARN", {"key": key, "msg": msg})
+        log("启动卡密验证失败，已清除缓存", "WARN", {"key": key, "msg": msg})
 
 
 def run_key_exe():
@@ -890,10 +929,11 @@ class LicenseWindow:
         self.processing = False
         self.verify_btn.config(state='normal', text='✓ 验证卡密')
         if ok:
+            # verify_license 内部已更新 LICENSE_STATUS
             self.msg_var.set("✅ 验证通过！")
             self.msg_label.config(foreground="#00aa00")
             self.result = {"key": info.get("key"), "expire": info.get("expire_time")}
-            self.window.after(500, self.close)
+            self.window.after(700, self.close)
         else:
             self.msg_var.set(f"✗ {info.get('msg', '验证失败')}")
             self.msg_label.config(foreground="#cc0000")
@@ -1659,21 +1699,30 @@ def create_share_session(path, expires_in=3600, password='', readonly=True,
 
 
 def validate_share_token(token, password=None):
+    """
+    校验共享会话。
+    返回 (path, reason)：
+      - (path, 'ok')      有效
+      - (None, 'not_found') 会话不存在
+      - (None, 'expired')   已过期
+      - (None, 'password')  需要密码 / 密码错误
+      - (None, 'access_limit') 访问次数超限
+    """
     clean_expired_sessions()
     with share_sessions_lock:
         session = share_sessions.get(token)
         if not session:
-            return None
+            return None, 'not_found'
         if session.get('expires', 0) < time.time():
             del share_sessions[token]; save_share_sessions()
-            return None
+            return None, 'expired'
         if session.get('password') and session['password'] != password:
-            return None
+            return None, 'password'
         max_access = session.get('max_access', 0)
         if max_access and session.get('access_count', 0) >= max_access:
-            return None
+            return None, 'access_limit'
         session['access_count'] = session.get('access_count', 0) + 1
-        return session['path']
+        return session['path'], 'ok'
 
 
 _ICON_MAP = {
@@ -1687,6 +1736,78 @@ _ICON_MAP = {
     '.exe':'⚡','.msi':'⚡','.bat':'⚡','.cmd':'⚡','.ps1':'⚡',
     '.iso':'💿','.apk':'📱','.dmg':'💿',
 }
+
+PASSWORD_PAGE_TEMPLATE = r'''
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>输入密码 · BJS 文件共享</title>
+<style>
+  :root{--primary:#2b6f9e;--primary-dark:#1a3a5c;--bg:#f0f4f8;--card:#fff;
+        --border:#dce2ea;--text:#1e2d3d;--muted:#6f8ba0;--accent:#e8f4ff;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Microsoft YaHei",Arial,sans-serif;
+       background:var(--bg);color:var(--text);min-height:100vh;
+       display:flex;align-items:center;justify-content:center;padding:20px;}
+  .box{background:var(--card);border-radius:14px;padding:36px 32px;max-width:400px;width:100%;
+       box-shadow:0 8px 32px rgba(0,0,0,.08);border:1px solid var(--border);text-align:center;}
+  .icon{font-size:52px;margin-bottom:12px;}
+  h1{font-size:20px;margin:0 0 6px;color:var(--primary-dark);}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:22px;line-height:1.5;}
+  input[type=password]{width:100%;padding:12px 14px;border:1px solid var(--border);
+    border-radius:8px;font-size:15px;outline:none;transition:.15s;margin-bottom:14px;
+    font-family:inherit;}
+  input[type=password]:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--accent);}
+  button{width:100%;padding:12px;border:none;border-radius:8px;background:var(--primary);
+    color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:.15s;
+    font-family:inherit;}
+  button:hover{background:var(--primary-dark);}
+  .err{color:#c0392b;font-size:13px;margin-top:12px;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">🔒</div>
+  <h1>此分享需要密码</h1>
+  <div class="sub">请输入访问密码以查看共享内容</div>
+  <form method="get" autocomplete="off">
+    <input type="password" name="pwd" placeholder="访问密码" autofocus required>
+    <button type="submit">进入</button>
+  </form>
+  <div class="err">{% if show_error %}密码错误，请重试{% endif %}</div>
+</div>
+</body>
+</html>
+'''
+
+INVALID_PAGE_TEMPLATE = r'''
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>访问失败 · BJS 文件共享</title>
+<style>
+  body{margin:0;font-family:-apple-system,"Segoe UI","Microsoft YaHei",Arial,sans-serif;
+       background:#f0f4f8;color:#333;display:flex;align-items:center;justify-content:center;
+       min-height:100vh;padding:20px;}
+  .box{background:#fff;padding:40px;border-radius:12px;display:inline-block;
+       box-shadow:0 8px 32px rgba(0,0,0,.1);text-align:center;max-width:400px;}
+  h1{color:#c0392b;margin:0 0 12px;font-size:22px;}
+  p{color:#666;line-height:1.6;margin:8px 0;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🔒 访问失败</h1>
+  <p>{{ message }}</p>
+</div>
+</body>
+</html>
+'''
+
 
 SHARE_PAGE_TEMPLATE = r'''
 <!DOCTYPE html>
@@ -1950,7 +2071,10 @@ def share_path(path, expires_in=3600, readonly=True, password='', upload=False, 
     if not token:
         return {"code": -1, "msg": "创建共享失败"}
     ip = get_local_ip()
-    return {"code": 0, "data": {"url": f"http://{ip}:{HTTP_PORT}/share/{token}/", "token": token}}
+    url = f"http://{ip}:{HTTP_PORT}/share/{token}/"
+    if password:
+        url += f"?pwd={urllib.parse.quote(password)}"
+    return {"code": 0, "data": {"url": url, "token": token, "has_password": bool(password)}}
 
 
 if ADVANCED_AVAILABLE:
@@ -2054,15 +2178,26 @@ def log_response(response):
 @app.route('/share/<token>/<path:subpath>')
 def share_browse(token, subpath):
     password = request.args.get('pwd', '')
-    base_path = validate_share_token(token, password)
-    if not base_path:
-        return render_template_string("""
-        <html><head><meta charset="utf-8"><title>访问失败</title>
-        <style>body{font-family:sans-serif;text-align:center;padding:80px;background:#f0f4f8;color:#333;}
-        .box{background:#fff;padding:40px;border-radius:12px;display:inline-block;box-shadow:0 2px 12px rgba(0,0,0,.1);}
-        h1{color:#c0392b;}a{color:#2b6f9e;}</style></head>
-        <body><div class="box"><h1>🔒 访问失败</h1>
-        <p>链接已过期、密码错误或不存在</p></div></body></html>"""), 403
+    base_path, reason = validate_share_token(token, password)
+
+    if base_path is None:
+        # 密码问题：显示密码输入页
+        if reason == 'password':
+            return render_template_string(
+                PASSWORD_PAGE_TEMPLATE,
+                show_error=bool(password)
+            ), 401 if password else 200
+
+        # 其他情况显示错误页
+        messages = {
+            'not_found': '链接不存在或已被删除',
+            'expired': '链接已过期',
+            'access_limit': '链接访问次数已达上限',
+        }
+        return render_template_string(
+            INVALID_PAGE_TEMPLATE,
+            message=messages.get(reason, '访问失败')
+        ), 403
 
     subpath = subpath.strip('/').replace('\\', '/')
     if subpath:
@@ -2161,9 +2296,10 @@ def share_browse(token, subpath):
 @app.route('/share/<token>/upload', methods=['POST'])
 def share_upload(token):
     password = request.form.get('pwd', '') or request.args.get('pwd', '')
-    base_path = validate_share_token(token, password)
-    if not base_path:
-        return jsonify({"code": -1, "msg": "无效或过期"}), 403
+    base_path, reason = validate_share_token(token, password)
+    if base_path is None:
+        msg = '密码错误' if reason == 'password' else '无效或过期'
+        return jsonify({"code": -1, "msg": msg}), 403
     with share_sessions_lock:
         sess = share_sessions.get(token, {})
     if sess.get('readonly', True):
@@ -2325,8 +2461,6 @@ def api_license_verify():
     key = (request.json or {}).get('key', '')
     ok, info = verify_license(key)
     if ok:
-        LICENSE_STATUS.update({"valid": True, "key": key,
-                               "expire_time": info.get("expire_time"), "msg": info.get("msg")})
         return jsonify({"code": 0, "data": LICENSE_STATUS})
     return jsonify({"code": -1, "msg": info.get("msg", "验证失败")})
 
@@ -2447,12 +2581,16 @@ def api_share_list():
     with share_sessions_lock:
         out = []
         for tok, s in share_sessions.items():
+            has_pwd = bool(s.get('password'))
+            url = f"http://{ip}:{HTTP_PORT}/share/{tok}/"
+            if has_pwd:
+                url += f"?pwd={urllib.parse.quote(s['password'])}"
             out.append({
                 'token': tok, 'path': s.get('path'),
-                'url': f"http://{ip}:{HTTP_PORT}/share/{tok}/",
+                'url': url,
                 'expires': datetime.fromtimestamp(s.get('expires', 0)).strftime('%Y-%m-%d %H:%M:%S'),
                 'readonly': s.get('readonly', True),
-                'has_password': bool(s.get('password')),
+                'has_password': has_pwd,
                 'access_count': s.get('access_count', 0),
                 'note': s.get('note', ''),
             })
@@ -2533,19 +2671,28 @@ def get_icon():
     return img
 
 
+def _rebuild_tray():
+    """安全地重建托盘图标（避免在 pystray 回调线程里死锁）"""
+    global tray_icon
+    try:
+        if tray_icon:
+            tray_icon.stop()
+    except Exception:
+        pass
+    tray_icon = None
+    time.sleep(0.5)  # 等旧托盘彻底停止
+    create_tray_icon()
+
+
 def show_license_window():
     win = LicenseWindow(MAIN_ROOT)
     result = win.run()
     if result and result.get("key"):
-        global tray_icon
-        try:
-            if tray_icon:
-                tray_icon.stop()
-        except Exception:
-            pass
-        tray_icon = None
-        create_tray_icon()
+        # verify_license 内部已更新 LICENSE_STATUS
         messagebox.showinfo("升级成功", "高级功能已解锁！", parent=MAIN_ROOT)
+        # 异步重建托盘，菜单会显示为高级版
+        threading.Thread(target=_rebuild_tray, daemon=True).start()
+        log("用户通过托盘升级高级版", "INFO", {"key": result["key"]})
     else:
         log("用户取消升级", "INFO")
 
@@ -2565,7 +2712,6 @@ def create_tray_icon():
                          on_tray_click),
     ]
 
-    # 有 D 级公告时把"查看公告"设为默认项，点击通知气泡会直接打开
     if pending_notice:
         items.append(pystray.MenuItem(
             "📢 查看公告",
@@ -2588,7 +2734,7 @@ def create_tray_icon():
             return
         try:
             time.sleep(1.0)
-            icon.notify(pending_notice[:120], "📢 BJS 公告 · 托盘查看详情")
+            icon.notify(pending_notice[:120], "📢 BJS 公告 · 点击查看详情")
             log("D级公告托盘通知已弹出", "INFO")
         except Exception as e:
             log("D级公告托盘通知失败", "WARN", {"err": str(e)})
