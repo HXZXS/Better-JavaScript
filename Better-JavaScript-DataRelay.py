@@ -1,4 +1,4 @@
-# BJS 数据接力 6.0.4.β
+# BJS 数据接力 6.0.4.γ
 # HXZXS
 
 import sys, os, json, time, shutil, subprocess, urllib.parse, urllib.request
@@ -18,7 +18,7 @@ import importlib.util
 import socket
 import io
 
-#  目录和日志 
+# ---------- 目录和日志 ----------
 BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 if os.name == 'nt':
     USER_DATA = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'BJS')
@@ -63,7 +63,7 @@ HTTP_PORT = 8765
 MAIN_ROOT = None
 LICENSE_STATUS = {"valid": False, "key": None, "expire_time": None, "msg": None}
 CLIPBOARD_HISTORY = deque(maxlen=100)
-VERSION = "6.0.4.β"
+VERSION = "6.0.4.γ"
 
 OFFLINE_BLOCK = True
 NOTICE_URL = "https://bjs.rth1.xyz/notice.json"
@@ -73,13 +73,62 @@ RECALL_URL = "https://bjs.rth1.xyz/Recall.json"
 LICENSE_SERVER = "https://lckey.rth1.xyz/"
 KEY_EXE = "BJS developer key.exe"
 UNINS_EXE = "unins000.exe"
-ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+
+# 全局 UA —— 所有联网行为统一使用
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 
 pending_notice = None
 tray_icon = None
 
 
-#  权限 
+# ---------- 联网工具 ----------
+def http_open(url, timeout=15, headers=None, method='GET', data=None):
+    """统一的联网入口：强制带 UA"""
+    h = {'User-Agent': UA, 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'}
+    if headers:
+        h.update(headers)
+    body = None
+    if data is not None:
+        if isinstance(data, (dict, list)):
+            body = json.dumps(data).encode('utf-8')
+            h.setdefault('Content-Type', 'application/json')
+        elif isinstance(data, str):
+            body = data.encode('utf-8')
+        else:
+            body = data
+    req = urllib.request.Request(url, data=body, headers=h, method=method)
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def http_get_json(url, timeout=15, headers=None):
+    """GET + 解析 JSON，带 UA"""
+    with http_open(url, timeout=timeout, headers=headers) as r:
+        return json.loads(r.read().decode('utf-8'))
+
+
+def http_download(url, save_path, progress_cb=None, timeout=60):
+    """带 UA 的流式下载。progress_cb(downloaded, total)"""
+    with http_open(url, timeout=timeout) as resp:
+        try:
+            total = int(resp.headers.get('Content-Length', 0))
+        except Exception:
+            total = 0
+        downloaded = 0
+        chunk = 64 * 1024
+        with open(save_path, 'wb') as f:
+            while True:
+                data = resp.read(chunk)
+                if not data:
+                    break
+                f.write(data)
+                downloaded += len(data)
+                if progress_cb:
+                    try: progress_cb(downloaded, total)
+                    except Exception: pass
+        return downloaded
+
+
+# ---------- 权限 ----------
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin() != 0
@@ -112,7 +161,7 @@ def get_local_ip():
         return '127.0.0.1'
 
 
-#  共享会话 
+# ---------- 共享会话 ----------
 share_sessions = {}
 share_sessions_lock = threading.Lock()
 
@@ -142,7 +191,7 @@ def clean_expired_sessions():
             save_share_sessions()
 
 
-#  设备 
+# ---------- 设备 ----------
 devices = {}
 def load_devices():
     global devices
@@ -161,7 +210,7 @@ def save_devices():
         pass
 
 
-#  开机自启 
+# ---------- 开机自启 ----------
 def setup_autostart():
     if getattr(sys, 'frozen', False):
         exe_cmd = f'"{sys.executable}"'
@@ -228,13 +277,11 @@ def ensure_firewall_rule():
         log("防火墙规则设置失败", "WARN", {"err": str(e)})
 
 
-#  召回 
+# ---------- 召回 ----------
 def recall_check():
     try:
-        req = urllib.request.Request(RECALL_URL, headers={'User-Agent': ua})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read().decode())
-            return data.get('code', -1), data.get('recall', ''), data.get('msg', '')
+        data = http_get_json(RECALL_URL, timeout=10)
+        return data.get('code', -1), data.get('recall', ''), data.get('msg', '')
     except Exception as e:
         log("召回检查失败", "WARN", {"err": str(e)})
         return -1, '', str(e)
@@ -274,12 +321,10 @@ def handle_recall():
                 log("删除卡密服务失败", "ERROR", {"err": str(e)})
 
 
-#  公告 
+# ---------- 公告 ----------
 def fetch_notice():
     try:
-        req = urllib.request.Request(NOTICE_URL, headers={'User-Agent': ua})
-        with urllib.request.urlopen(req, timeout=5) as r:
-            data = json.loads(r.read().decode())
+        data = http_get_json(NOTICE_URL, timeout=5)
         code = data.get('code', -1)
         if code == 0:
             return True, None
@@ -408,12 +453,10 @@ def show_pending_notice():
         messagebox.showinfo("提示", "暂无公告", parent=MAIN_ROOT)
 
 
-#  更新 
+# ---------- 更新 ----------
 def get_updates():
     try:
-        req = urllib.request.Request(UPDATE_URL, headers={'User-Agent': ua})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read().decode())
+        data = http_get_json(UPDATE_URL, timeout=10)
         ver = data.get('version', '')
         if ver and ver != VERSION:
             url = data.get('url', ''); msg = data.get('msg', '')
@@ -468,11 +511,15 @@ def show_update_win(version, url, msg):
                     tmp_dir = tempfile.gettempdir()
                     fn = os.path.basename(url) or "bjs_setup.exe"
                     sp = os.path.join(tmp_dir, fn)
-                    def hook(bn, bs, ts):
-                        if ts > 0:
-                            pv.set(min(100, int(bn*bs*100/ts)))
+
+                    def _cb(downloaded, total):
+                        if total > 0:
+                            pv.set(min(100, int(downloaded * 100 / total)))
                             win.update_idletasks()
-                    urllib.request.urlretrieve(url, sp, reporthook=hook)
+
+                    # 带 UA 的流式下载
+                    http_download(url, sp, progress_cb=_cb, timeout=60)
+
                     sl.config(text="下载完成，正在启动安装...")
                     if os.name == 'nt':
                         subprocess.Popen([sp], shell=True)
@@ -495,7 +542,7 @@ def show_update_win(version, url, msg):
         log("更新窗口异常", "ERROR", {"err": str(e)})
 
 
-#  卡密 
+# ---------- 卡密 ----------
 def load_cache():
     if os.path.exists(CACHE_FILE):
         try:
@@ -513,19 +560,37 @@ def save_cache(data):
         pass
 
 
+def _apply_license(key, expire, msg):
+    """统一更新全局授权状态"""
+    LICENSE_STATUS.update({
+        "valid": True,
+        "key": key,
+        "expire_time": expire,
+        "msg": msg or "验证通过"
+    })
+
+
+def _clear_license():
+    """清除授权状态并删除本地缓存"""
+    LICENSE_STATUS.update({"valid": False, "key": None,
+                           "expire_time": None, "msg": None})
+    if os.path.exists(CACHE_FILE):
+        try: os.remove(CACHE_FILE)
+        except Exception: pass
+
+
 def online_check(key, device_id):
+    """联网校验卡密。返回 (ok, expire, msg, is_network_error)"""
     url = f"{LICENSE_SERVER}?key={urllib.parse.quote(key)}&uuid={urllib.parse.quote(device_id)}"
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept': 'application/json'})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode())
+        data = http_get_json(url, timeout=15,
+                             headers={'Accept': 'application/json'})
         if data.get("code") == 200:
-            return True, data.get("data", {}).get("expireTime"), data.get("msg")
-        return False, None, data.get("msg")
+            return True, data.get("data", {}).get("expireTime"), data.get("msg"), False
+        return False, None, data.get("msg"), False
     except Exception as e:
         log("联网验证异常", "ERROR", {"err": str(e)})
-        # 网络错误用特殊标记，避免误删缓存
-        return False, None, f"__NETWORK_ERROR__:{e}"
+        return False, None, f"网络异常：{e}", True
 
 
 def get_hardware_id():
@@ -584,39 +649,27 @@ def get_hardware_id():
     return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
 
 
-def _apply_license(key, expire, msg):
-    """统一更新全局授权状态的入口"""
-    LICENSE_STATUS.update({
-        "valid": True,
-        "key": key,
-        "expire_time": expire,
-        "msg": msg or "验证通过"
-    })
-
-
 def verify_license(key):
-    """验证卡密。验证成功会同步更新 LICENSE_STATUS。"""
+    """验证卡密。必须联网成功才算通过，网络异常直接失败。"""
     if not key or not key.strip():
         return False, {"msg": "卡密为空"}
     key = key.strip()
     device_id = get_hardware_id()
 
-    # 缓存命中
-    cache = load_cache()
-    if cache.get("key") == key and cache.get("uuid") == device_id:
-        expire = cache.get("expire_time")
-        if expire and expire > int(time.time() * 1000):
-            _apply_license(key, expire, "缓存有效")
-            return True, {"key": key, "uuid": device_id,
-                          "expire_time": expire, "msg": "缓存有效"}
+    ok, expire, msg, net_err = online_check(key, device_id)
 
-    # 联网校验
-    ok, expire, msg = online_check(key, device_id)
     if ok and expire and expire > int(time.time() * 1000):
         save_cache({"key": key, "uuid": device_id,
                     "expire_time": expire, "verified_at": int(time.time())})
         _apply_license(key, expire, msg)
         return True, {"key": key, "uuid": device_id, "expire_time": expire, "msg": msg}
+
+    # 失败：清缓存 + 降级
+    _clear_license()
+    if net_err:
+        return False, {"msg": "网络异常，请检查网络后重试"}
+    if ok and (not expire or expire <= int(time.time() * 1000)):
+        return False, {"msg": "卡密已过期"}
     return False, {"msg": msg or "验证失败"}
 
 
@@ -625,42 +678,32 @@ def is_advanced_allowed():
 
 
 def auth_on_start():
-    """启动时恢复授权状态。优先用本地缓存，网络错误不删缓存。"""
+    """启动时校验授权。不比较本地设备指纹，一律拿去服务端验证。
+    必须联网成功，网络异常直接降级普通版。"""
     cache = load_cache()
     if not cache.get("key"):
+        _clear_license()
         return
+
     key = cache["key"]
     device_id = get_hardware_id()
 
-    # 1) 本地缓存优先
-    if cache.get("uuid") == device_id:
-        expire = cache.get("expire_time")
-        if expire and expire > int(time.time() * 1000):
-            _apply_license(key, expire, "缓存有效")
-            log("启动时使用缓存授权", "INFO", {"key": key})
-            return
+    # 不管 uuid 有没有变，都拿 key 去服务端验证
+    ok, expire, msg, net_err = online_check(key, device_id)
 
-    # 2) 缓存无效，联网校验
-    ok, expire, msg = online_check(key, device_id)
     if ok and expire and expire > int(time.time() * 1000):
-        _apply_license(key, expire, "验证通过")
+        _apply_license(key, expire, msg or "验证通过")
+        # 服务端认可就更新本地 uuid 为当前设备
         save_cache({"key": key, "uuid": device_id,
                     "expire_time": expire, "verified_at": int(time.time())})
-        log("启动卡密验证通过", "INFO", {"key": key})
+        log("启动卡密验证通过", "INFO", {"key": key, "uuid": device_id})
         return
 
-    # 3) 只有明确失败才删缓存；网络错误保留
-    if msg and str(msg).startswith("__NETWORK_ERROR__"):
-        LICENSE_STATUS.update({"valid": False, "key": None,
-                               "expire_time": None, "msg": "网络错误，暂时无法验证"})
-        log("启动卡密验证网络错误，保留缓存", "WARN", {"key": key, "msg": msg})
+    _clear_license()
+    if net_err:
+        log("启动卡密验证失败：网络异常，降级普通版", "WARN", {"key": key})
     else:
-        LICENSE_STATUS.update({"valid": False, "key": None,
-                               "expire_time": None, "msg": msg or "验证失败"})
-        if os.path.exists(CACHE_FILE):
-            try: os.remove(CACHE_FILE)
-            except Exception: pass
-        log("启动卡密验证失败，已清除缓存", "WARN", {"key": key, "msg": msg})
+        log("启动卡密验证失败，降级普通版", "WARN", {"key": key, "msg": msg})
 
 
 def run_key_exe():
@@ -700,7 +743,7 @@ def kill_key_exe():
         pass
 
 
-#  路径 
+# ---------- 路径 ----------
 def safe_path(p, allow_system=False):
     if not p or not isinstance(p, str):
         return False
@@ -745,7 +788,7 @@ def _human_size(n):
     return f"{n:.1f}PB"
 
 
-#  对话框 
+# ---------- 对话框 ----------
 class DialogBox:
     def __init__(self, master, cfg):
         self.master = master; self.cfg = cfg
@@ -780,7 +823,8 @@ class DialogBox:
                 if src:
                     try:
                         if src.startswith(('http://', 'https://')):
-                            with urllib.request.urlopen(src, timeout=10) as r:
+                            # 带 UA 拉取远程图片
+                            with http_open(src, timeout=10) as r:
                                 img = Image.open(io.BytesIO(r.read()))
                         else:
                             img = Image.open(src)
@@ -875,7 +919,7 @@ def show_dialog(cfg):
         return None
 
 
-#  卡密窗口 
+# ---------- 卡密窗口 ----------
 class LicenseWindow:
     def __init__(self, master):
         self.master = master; self.result = None
@@ -929,7 +973,6 @@ class LicenseWindow:
         self.processing = False
         self.verify_btn.config(state='normal', text='✓ 验证卡密')
         if ok:
-            # verify_license 内部已更新 LICENSE_STATUS
             self.msg_var.set("✅ 验证通过！")
             self.msg_label.config(foreground="#00aa00")
             self.result = {"key": info.get("key"), "expire": info.get("expire_time")}
@@ -947,7 +990,7 @@ class LicenseWindow:
         return self.result
 
 
-#  基础 API 
+# ---------- 基础 API ----------
 def open_path(path):
     if not path or not safe_path(path):
         return {"code": -1, "msg": "路径无效"}
@@ -991,7 +1034,7 @@ def show_msg(text, typ="info", title="来自网页", image=None, w=0, h=0):
     return {"code": 0}
 
 
-#  文件操作 
+# ---------- 文件操作 ----------
 def list_dir(path):
     if not path or not safe_path(path) or not os.path.isdir(path):
         return {"code": -1, "msg": "无效目录"}
@@ -1223,9 +1266,8 @@ def lanzou_dl(url, pwd='', save_path=''):
         api = f"https://api.bugpk.com/api/lanzou?url={urllib.parse.quote(url)}"
         if pwd:
             api += f"&pwd={urllib.parse.quote(pwd)}"
-        req = urllib.request.Request(api, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = json.loads(r.read().decode())
+        # 带 UA
+        data = http_get_json(api, timeout=30)
         if data.get('code') != 200:
             return False, None, None, data.get('msg', '解析失败')
         real_url = data['data'].get('url')
@@ -1240,16 +1282,14 @@ def lanzou_dl(url, pwd='', save_path=''):
         elif os.path.isdir(save_path):
             save_path = os.path.join(save_path, filename)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        req = urllib.request.Request(real_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=60) as r:
-            with open(save_path, 'wb') as f:
-                f.write(r.read())
+        # 带 UA 下载
+        http_download(real_url, save_path, timeout=60)
         return True, filename, save_path, None
     except Exception as e:
         return False, None, None, str(e)
 
 
-#  Windows 专属 
+# ---------- Windows 专属 ----------
 def set_file_attr(path, hidden=None, readonly=None, system=None, archive=None):
     if os.name != 'nt':
         return {"code": -1, "msg": "仅支持 Windows"}
@@ -1334,7 +1374,7 @@ def notify(title, message):
     return False
 
 
-#  依赖 
+# ---------- 依赖 ----------
 ADVANCED_AVAILABLE = True
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -1357,7 +1397,7 @@ def check_license():
     return None
 
 
-#  剪贴板 
+# ---------- 剪贴板 ----------
 _clip_last = None
 def _clipboard_worker():
     global _clip_last
@@ -1398,7 +1438,7 @@ def start_clipboard_monitor():
         threading.Thread(target=_clipboard_worker, daemon=True).start()
 
 
-#  定时 / 监听 
+# ---------- 定时 / 监听 ----------
 if ADVANCED_AVAILABLE:
     scheduler = BackgroundScheduler()
     scheduler.start()
@@ -1524,7 +1564,7 @@ if ADVANCED_AVAILABLE:
             log("保存版本失败", "ERROR", {"err": str(e)})
 
 
-#  高级函数 
+# ---------- 高级函数 ----------
 def batch_rename(path, pattern, replacement, preview=True):
     err = check_license()
     if err: return err
@@ -1675,7 +1715,7 @@ def create_archive(sources, target, format="zip", password=None):
         return {"code": -1, "msg": str(e)}
 
 
-#  共享 
+# ---------- 共享 ----------
 def create_share_session(path, expires_in=3600, password='', readonly=True,
                          upload=False, note='', max_access=0):
     if not safe_path(path) or not os.path.exists(path):
@@ -1702,11 +1742,7 @@ def validate_share_token(token, password=None):
     """
     校验共享会话。
     返回 (path, reason)：
-      - (path, 'ok')      有效
-      - (None, 'not_found') 会话不存在
-      - (None, 'expired')   已过期
-      - (None, 'password')  需要密码 / 密码错误
-      - (None, 'access_limit') 访问次数超限
+      ok / not_found / expired / password / access_limit
     """
     clean_expired_sessions()
     with share_sessions_lock:
@@ -1985,7 +2021,7 @@ function handleFiles(files){
 '''
 
 
-#  插件 
+# ---------- 插件 ----------
 def load_plugin(name):
     pf = os.path.join(PLUGIN_DIR, f"{name}.py")
     if not os.path.exists(pf):
@@ -2001,8 +2037,8 @@ def install_plugin(source, name):
     if err: return err
     try:
         if source.startswith(('http://', 'https://')):
-            req = urllib.request.Request(source, headers={'User-Agent': ua})
-            with urllib.request.urlopen(req, timeout=30) as r:
+            # 带 UA 下载插件
+            with http_open(source, timeout=30) as r:
                 content = r.read().decode('utf-8')
         else:
             with open(source, 'r', encoding='utf-8') as f:
@@ -2030,7 +2066,7 @@ def exec_plugin(plugin, action):
         return {"code": -1, "msg": str(e)}
 
 
-#  多设备 / 远程 
+# ---------- 多设备 / 远程 ----------
 def sync_device(device_id, sync_path, auto_sync=False):
     err = check_license()
     if err: return err
@@ -2157,7 +2193,7 @@ if ADVANCED_AVAILABLE:
         return {"code": -1, "msg": f"未找到版本 {version}"}
 
 
-#  Flask 
+# ---------- Flask ----------
 app = Flask(__name__)
 CORS(app)
 
@@ -2181,14 +2217,12 @@ def share_browse(token, subpath):
     base_path, reason = validate_share_token(token, password)
 
     if base_path is None:
-        # 密码问题：显示密码输入页
         if reason == 'password':
             return render_template_string(
                 PASSWORD_PAGE_TEMPLATE,
                 show_error=bool(password)
             ), 401 if password else 200
 
-        # 其他情况显示错误页
         messages = {
             'not_found': '链接不存在或已被删除',
             'expired': '链接已过期',
@@ -2326,7 +2360,7 @@ def share_upload(token):
     return jsonify({"code": 0, "msg": "上传成功", "name": os.path.basename(save_path)})
 
 
-#  基础路由 
+# ---------- 基础路由 ----------
 @app.route('/health')
 def health():
     return jsonify({"code": 0, "status": "running", "port": HTTP_PORT, "version": VERSION})
@@ -2465,7 +2499,7 @@ def api_license_verify():
     return jsonify({"code": -1, "msg": info.get("msg", "验证失败")})
 
 
-#  高级路由 
+# ---------- 高级路由 ----------
 def advanced_unavailable():
     return jsonify({"code": -1, "msg": "高级功能依赖未安装（apscheduler/watchdog）"})
 
@@ -2634,7 +2668,7 @@ def api_exec_plugin():
     return jsonify(exec_plugin(d.get('plugin',''), d.get('action','')))
 
 
-#  Windows 路由 
+# ---------- Windows 路由 ----------
 @app.route('/api/win/attr', methods=['POST'])
 def api_win_attr():
     d = request.json or {}
@@ -2659,7 +2693,7 @@ def api_win_notify():
     return jsonify({"code": 0 if ok else -1, "msg": "已通知" if ok else "通知失败"})
 
 
-#  托盘 
+# ---------- 托盘 ----------
 def get_icon():
     if os.path.exists(ICON_PATH):
         try:
@@ -2672,7 +2706,6 @@ def get_icon():
 
 
 def _rebuild_tray():
-    """安全地重建托盘图标（避免在 pystray 回调线程里死锁）"""
     global tray_icon
     try:
         if tray_icon:
@@ -2680,7 +2713,7 @@ def _rebuild_tray():
     except Exception:
         pass
     tray_icon = None
-    time.sleep(0.5)  # 等旧托盘彻底停止
+    time.sleep(0.5)
     create_tray_icon()
 
 
@@ -2688,9 +2721,7 @@ def show_license_window():
     win = LicenseWindow(MAIN_ROOT)
     result = win.run()
     if result and result.get("key"):
-        # verify_license 内部已更新 LICENSE_STATUS
         messagebox.showinfo("升级成功", "高级功能已解锁！", parent=MAIN_ROOT)
-        # 异步重建托盘，菜单会显示为高级版
         threading.Thread(target=_rebuild_tray, daemon=True).start()
         log("用户通过托盘升级高级版", "INFO", {"key": result["key"]})
     else:
@@ -2788,7 +2819,7 @@ def start_http():
         log("HTTP启动失败", "ERROR", {"err": str(e)})
 
 
-#  持久化任务加载 
+# ---------- 持久化任务加载 ----------
 def load_scheduled_tasks():
     if not ADVANCED_AVAILABLE:
         return
@@ -2819,7 +2850,7 @@ def load_watch_handlers():
             start_watch(path, cfg)
 
 
-#  主入口 
+# ---------- 主入口 ----------
 def main():
     global MAIN_ROOT, pending_notice
 
