@@ -6,12 +6,12 @@ $ExeName     = 'Better JavaScript DataRelay.exe'
 $LaunchAfterInstall = $true
 
 $DownloadUrls = @(
-    'https://tvv.tw/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://ghf.无名氏.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://github.tbap.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://ghfile.geekertao.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh.927223.xyz/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh-proxy.com/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
+    'https://tvv.tw/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
 )
 $ExpectedHash = '5979DCA97216CA11EC2B6A9ABA7225F7DCA4E845E14849BF6C108FFBD253BE2F'
 $UserAgent    = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
