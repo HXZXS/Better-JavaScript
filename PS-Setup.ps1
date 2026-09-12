@@ -24,9 +24,10 @@ function Test-Admin {
 
 if (-not (Test-Admin)) {
     Write-Host 'Requesting administrator privileges... / 正在请求管理员权限...' -ForegroundColor Yellow
-    $args = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    Start-Process powershell -Verb RunAs -ArgumentList $args
-    exit
+    $argList = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell -Verb RunAs -ArgumentList $argList
+    Start-Sleep -Milliseconds 600
+    [Environment]::Exit(0)
 }
 
 $Host.UI.RawUI.WindowTitle = "$AppName Automatic Installer"
