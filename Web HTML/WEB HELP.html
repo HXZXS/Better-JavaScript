@@ -1,1178 +1,1068 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BJS 数据接力 · 开发文档</title>
-    <style>
-        /* --- 全局 --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: "Microsoft YaHei", -apple-system, "PingFang SC", "Segoe UI", Roboto, Arial, sans-serif;
-            background: #f1f3f6;
-            color: #1a2a3a;
-            line-height: 1.6;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- 主布局 --- */
-        .app {
-            display: flex;
-            height: 100vh;
-        }
-
-        /* ===== 侧边栏 ===== */
-        .sidebar {
-            width: 270px;
-            background: #ffffff;
-            border-right: 1px solid #dce2e8;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            height: 100vh;
-            overflow: hidden;
-            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
-        }
-        .sidebar-header {
-            padding: 20px 20px 14px 20px;
-            border-bottom: 1px solid #eaeef2;
-            flex-shrink: 0;
-        }
-        .sidebar-header h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #0f2638;
-            letter-spacing: -0.2px;
-        }
-        .sidebar-header h2 small {
-            font-weight: 400;
-            font-size: 14px;
-            color: #6f8ba0;
-            display: block;
-            margin-top: 2px;
-        }
-        .sidebar-nav-wrap {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px 10px 20px 10px;
-        }
-        .sidebar-nav-wrap::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav-wrap::-webkit-scrollbar-track {
-            background: #f0f2f4;
-        }
-        .sidebar-nav-wrap::-webkit-scrollbar-thumb {
-            background: #c5d0db;
-            border-radius: 10px;
-        }
-
-        .sidebar-nav .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #8a9fb0;
-            padding: 14px 12px 4px 12px;
-            letter-spacing: 0.6px;
-            font-weight: 600;
-        }
-        .sidebar-nav a {
-            display: block;
-            padding: 7px 14px;
-            border-radius: 6px;
-            color: #2c4055;
-            text-decoration: none;
-            font-size: 14px;
-            transition: background 0.12s, color 0.12s;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-        }
-        .sidebar-nav a:hover {
-            background: #eef3f8;
-            color: #0f2638;
-        }
-        .sidebar-nav a.active {
-            background: #e4edf5;
-            color: #1a5276;
-            border-left-color: #2b6f9e;
-            font-weight: 500;
-        }
-
-        /* ===== 主内容 ===== */
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            background: #f7f9fb;
-        }
-        .main-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 28px 40px 40px 40px;
-        }
-        .main-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .main-scroll::-webkit-scrollbar-track {
-            background: #f0f2f5;
-        }
-        .main-scroll::-webkit-scrollbar-thumb {
-            background: #c5d0db;
-            border-radius: 10px;
-        }
-
-        /* --- 顶部导航条 --- */
-        .top-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 18px;
-            border-bottom: 1px solid #e2e8ee;
-            margin-bottom: 22px;
-            flex-shrink: 0;
-        }
-        .top-nav .page-info {
-            font-size: 14px;
-            color: #5a738a;
-        }
-        .top-nav .page-info strong {
-            color: #1a3a5c;
-        }
-        .top-nav .nav-buttons {
-            display: flex;
-            gap: 8px;
-        }
-        .top-nav .nav-buttons button {
-            padding: 6px 18px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            background: #ffffff;
-            color: #1f3a4f;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.12s, border-color 0.12s;
-        }
-        .top-nav .nav-buttons button:hover {
-            background: #eef3f8;
-            border-color: #a0b3c4;
-        }
-        .top-nav .nav-buttons button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            background: #f5f7f9;
-        }
-
-        /* --- API 详情卡片 --- */
-        .api-detail {
-            background: #ffffff;
-            border-radius: 14px;
-            border: 1px solid #e2e8ee;
-            padding: 28px 32px 32px 32px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            animation: fadeIn 0.2s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .api-detail .api-head {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 6px;
-        }
-        .api-detail .method {
-            font-weight: 700;
-            font-size: 13px;
-            padding: 2px 16px;
-            border-radius: 20px;
-            color: #fff;
-            background: #2b6f9e;
-            border: 1px solid #1a4f72;
-            letter-spacing: 0.3px;
-        }
-        .api-detail .method.get { background: #2980b9; border-color: #1a5276; }
-        .api-detail .method.post { background: #27ae60; border-color: #1a7a42; }
-        .api-detail .method.delete { background: #c0392b; border-color: #922b21; }
-        .api-detail .endpoint {
-            font-family: Consolas, "Courier New", monospace;
-            font-size: 16px;
-            background: #f0f4f9;
-            padding: 2px 14px;
-            border-radius: 6px;
-            border: 1px solid #dce2ea;
-            color: #1a2a3e;
-        }
-        .api-detail .api-name {
-            font-size: 22px;
-            font-weight: 700;
-            color: #0f2638;
-            margin-left: auto;
-        }
-        .api-detail .api-desc {
-            font-size: 15px;
-            color: #3d5569;
-            margin: 12px 0 16px 0;
-            padding: 12px 16px;
-            background: #f6f9fc;
-            border-radius: 8px;
-            border-left: 4px solid #2b6f9e;
-        }
-        .api-detail .api-desc strong {
-            color: #1a3a5c;
-        }
-
-        /* 参数表格 */
-        .params-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            margin: 10px 0 16px 0;
-        }
-        .params-table th {
-            text-align: left;
-            padding: 8px 12px;
-            background: #f0f4f9;
-            border-bottom: 2px solid #dce2ea;
-            color: #1f3a4f;
-            font-weight: 600;
-        }
-        .params-table td {
-            padding: 7px 12px;
-            border-bottom: 1px solid #eaeef3;
-        }
-        .params-table .required {
-            color: #c0392b;
-            font-weight: 500;
-            font-size: 12px;
-        }
-        .params-table .optional {
-            color: #6f8ba0;
-            font-size: 12px;
-        }
-        .params-table code {
-            background: #eef3f8;
-            padding: 1px 6px;
-            border-radius: 3px;
-            font-size: 13px;
-        }
-
-        /* 示例 */
-        .example-block {
-            background: #1a2a3e;
-            color: #e8edf4;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-family: Consolas, "Courier New", monospace;
-            font-size: 13px;
-            overflow-x: auto;
-            margin: 8px 0 12px 0;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .example-block .label {
-            color: #8faabc;
-            font-size: 12px;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .example-block .label .code {
-            color: #e8edf4;
-        }
-
-        /* 测试工具 */
-        .test-section {
-            margin-top: 18px;
-            border-top: 1px solid #e2e8ee;
-            padding-top: 18px;
-        }
-        .test-section .row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .test-section .row label {
-            min-width: 70px;
-            font-weight: 500;
-            font-size: 13px;
-            color: #3d5569;
-        }
-        .test-section .row input,
-        .test-section .row textarea,
-        .test-section .row select {
-            flex: 1;
-            min-width: 150px;
-            padding: 6px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 13px;
-            background: #ffffff;
-            transition: border 0.15s;
-        }
-        .test-section .row input:focus,
-        .test-section .row textarea:focus,
-        .test-section .row select:focus {
-            border-color: #2b6f9e;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(43,111,158,0.08);
-        }
-        .test-section .row textarea {
-            min-height: 38px;
-            font-family: Consolas, "Courier New", monospace;
-        }
-        .test-section .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .btn {
-            padding: 6px 22px;
-            border: 1px solid #b0bec5;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #f0f4f9;
-            color: #1f3a4f;
-            transition: background 0.12s, border-color 0.12s;
-        }
-        .btn:hover {
-            background: #e2eaf2;
-            border-color: #8fa3b3;
-        }
-        .btn-success {
-            background: #27ae60;
-            border-color: #1e8449;
-            color: #fff;
-        }
-        .btn-success:hover {
-            background: #1e8449;
-            border-color: #186a3b;
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #bcc9d4;
-        }
-        .btn-outline:hover {
-            background: #edf2f7;
-        }
-        .result-box {
-            margin-top: 10px;
-            padding: 10px 14px;
-            background: #fafcfd;
-            border: 1px solid #dde3ea;
-            border-left: 4px solid #2b6f9e;
-            font-family: Consolas, "Courier New", monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 200px;
-            overflow-y: auto;
-            border-radius: 0 6px 6px 0;
-        }
-
-        /* --- 页脚 --- */
-        .footer {
-            margin-top: 28px;
-            padding-top: 16px;
-            border-top: 1px solid #dce2e8;
-            text-align: center;
-            font-size: 13px;
-            color: #6f8ba0;
-            flex-shrink: 0;
-        }
-
-        /* --- 空状态 --- */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6f8ba0;
-        }
-        .empty-state h3 {
-            font-size: 20px;
-            color: #1a3a5c;
-            margin-bottom: 8px;
-        }
-
-        /* --- 响应式 --- */
-        @media (max-width: 820px) {
-            .app { flex-direction: column; height: auto; }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                max-height: 300px;
-                border-right: none;
-                border-bottom: 1px solid #dce2e8;
-            }
-            .sidebar-nav-wrap {
-                overflow-y: auto;
-                max-height: 180px;
-            }
-            .main { height: auto; }
-            .main-scroll { padding: 16px 18px 30px 18px; }
-            .top-nav { flex-wrap: wrap; gap: 10px; }
-            .top-nav .nav-buttons { margin-left: auto; }
-            .api-detail { padding: 18px 16px; }
-            .api-detail .api-name { font-size: 18px; margin-left: 0; width: 100%; }
-            .api-detail .api-head { flex-wrap: wrap; }
-        }
-        @media (max-width: 480px) {
-            .test-section .row { flex-direction: column; align-items: stretch; }
-            .test-section .row label { min-width: auto; }
-            .top-nav { flex-direction: column; align-items: stretch; }
-            .top-nav .nav-buttons { justify-content: center; }
-            .params-table { font-size: 13px; }
-            .params-table th, .params-table td { padding: 5px 8px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJS 数据接力 · 控制台</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f0f4f8; font-family: "Microsoft YaHei", Arial, sans-serif;
+       color: #1a3a5c; padding: 20px; }
+.container { max-width: 1180px; margin: 0 auto; background: rgba(255,255,255,0.92);
+             backdrop-filter: blur(8px); border-radius: 28px; padding: 25px 30px;
+             box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+h1 { font-size: 28px; border-bottom: 3px solid #2b6f9e; padding-bottom: 8px;
+     display: flex; justify-content: space-between; align-items: center; }
+h1 small { font-size: 16px; font-weight: 400; color: #6a8aa8; }
+.sub { color: #4a6a8a; margin-bottom: 20px; font-size: 14px;
+       border-left: 4px solid #2b6f9e; padding-left: 12px; }
+.card { background: #fff; border-radius: 16px; padding: 16px 20px;
+        margin-bottom: 18px; border: 1px solid #e2eaf2; }
+.card h3 { display: flex; gap: 8px; align-items: center; font-size: 17px;
+           margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.row label { min-width: 70px; font-weight: 500; color: #4a6a8a; font-size: 14px; }
+.row input, .row select, .row textarea { flex: 1; padding: 8px 12px;
+    border: 1px solid #d8e2ed; border-radius: 8px; background: #fafcff;
+    font-size: 14px; outline: none; font-family: inherit; }
+.row input:focus, .row select:focus, .row textarea:focus {
+    border-color: #2b6f9e; box-shadow: 0 0 0 3px rgba(43,111,158,0.15); }
+.btn { padding: 8px 20px; border: none; border-radius: 10px; font-weight: 600;
+       cursor: pointer; transition: 0.2s; background: #e8edf4; color: #1a3a5c; }
+.btn:hover:not(:disabled) { transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed;
+    transform: none !important; box-shadow: none !important; }
+.btn-primary { background: #2b6f9e; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1f5a83; }
+.btn-success { background: #1f8b4c; color: #fff; }
+.btn-success:hover:not(:disabled) { background: #16733e; }
+.btn-warning { background: #d48c2c; color: #fff; }
+.btn-warning:hover:not(:disabled) { background: #b87720; }
+.btn-purple { background: #8e44ad; color: #fff; }
+.btn-purple:hover:not(:disabled) { background: #7d3c98; }
+.btn-danger { background: #c0392b; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #a93226; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.preset-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.preset-btn { background: #eef3f8; border: 1px solid #d8e2ed; border-radius: 20px;
+              padding: 2px 14px; font-size: 12px; cursor: pointer; color: #1f3b58; }
+.preset-btn:hover { background: #d8e2ed; }
+.result-box { margin-top: 10px; padding: 10px; background: #f8fafc;
+              border-radius: 8px; border-left: 4px solid #2b6f9e;
+              font-family: Consolas, monospace; font-size: 13px;
+              max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+.log-viewer { background: #1a2a3e; color: #e8edf4; padding: 12px;
+              border-radius: 8px; max-height: 250px; overflow-y: auto;
+              font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+.status-bar { display: flex; justify-content: space-between; background: #f8fafc;
+              padding: 8px 16px; border-radius: 10px; border: 1px solid #e2eaf2;
+              margin-bottom: 20px; flex-wrap: wrap; align-items: center; gap: 10px; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.online { background: #1f8b4c; }
+.offline { background: #c0392b; }
+.license-badge { padding: 2px 12px; border-radius: 20px; font-size: 13px;
+                 font-weight: 600; background: #e8edf4; }
+.license-badge.valid { background: #d4edda; color: #155724; }
+.license-badge.invalid { background: #f8d7da; color: #721c24; }
+.file-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.file-table th { text-align: left; padding: 6px 12px;
+                 border-bottom: 2px solid #d8e2ed; color: #6a8aa8; }
+.file-table td { padding: 5px 12px; border-bottom: 1px solid #e2eaf2; }
+.file-table .dir { cursor: pointer; color: #2b6f9e; font-weight: 600; }
+.file-table .file { cursor: pointer; color: #2b6f9e; }
+.file-table .file:hover, .file-table .dir:hover { text-decoration: underline; }
+.advanced-section { border-top: 2px dashed #cbd7e6; margin-top: 10px; padding-top: 10px; }
+.advanced-section h2 { font-size: 20px; color: #2b6f9e;
+                       display: flex; align-items: center; gap: 10px; }
+.win-section { border-top: 2px dashed #f5c6a0; margin-top: 10px; padding-top: 10px; }
+.win-section h2 { font-size: 20px; color: #c47a1a;
+                  display: flex; align-items: center; gap: 10px; }
+.license-input-row { display: flex; gap: 8px; align-items: center;
+                     flex-wrap: wrap; margin: 10px 0; }
+.license-input-row input { flex: 1; min-width: 200px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 700px) {
+    .container { padding: 16px; }
+    .row { flex-direction: column; align-items: stretch; }
+    .row label { min-width: auto; }
+    .license-input-row { flex-direction: column; align-items: stretch; }
+    .two-col { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
-<div class="app">
+<div class="container">
+    <h1>🔗 BJS 数据接力 <small>v6.0.4</small></h1>
+    <div class="sub">HXZXS · Windows 优先</div>
 
-    <!-- ===== 侧边栏 ===== -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h2>BJS 文档 <small>v6.0.β</small></h2>
+    <div class="status-bar">
+        <div><span class="status-dot" id="statusDot"></span>
+            <span id="statusText">检测中...</span></div>
+        <div>
+            <span class="license-badge invalid" id="licenseBadge">⚪ 标准版</span>
+            <button class="btn btn-sm btn-primary" onclick="checkHealth()">🔄 刷新</button>
+            <button class="btn btn-sm btn-success" onclick="refreshLicense()">🔒 刷新授权</button>
         </div>
-        <div class="sidebar-nav-wrap">
-            <nav class="sidebar-nav" id="sidebarNav">
-                <div class="section-title">概览</div>
-                <a data-id="intro" class="active">简介</a>
-                <div class="section-title">基础功能</div>
-                <a data-id="health">健康检查</a>
-                <a data-id="open">打开路径</a>
-                <a data-id="msg">弹窗消息</a>
-                <a data-id="run">运行程序</a>
-                <a data-id="dialog">自定义对话框</a>
-                <a data-id="listdir">列出目录</a>
-                <a data-id="readfile">读取文件</a>
-                <a data-id="mkdir">创建文件夹</a>
-                <a data-id="delete">删除</a>
-                <a data-id="copy">复制</a>
-                <a data-id="move">移动</a>
-                <a data-id="lanzou">蓝奏云下载</a>
-                <a data-id="log">查看日志</a>
-                <a data-id="sysinfo">系统信息</a>
-                <div class="section-title">高级功能（需卡密）</div>
-                <a data-id="batch-rename">批量重命名</a>
-                <a data-id="sync">目录同步</a>
-                <a data-id="schedule">定时任务</a>
-                <a data-id="clipboard">剪贴板历史</a>
-                <a data-id="watch">文件监听</a>
-                <a data-id="search">全文搜索</a>
-                <a data-id="versions">版本管理</a>
-                <a data-id="duplicates">重复文件</a>
-                <a data-id="archive">压缩包管理</a>
-                <a data-id="share">局域网分享</a>
-                <a data-id="remote">远程协助</a>
-                <a data-id="device">多设备同步</a>
-                <a data-id="plugin">插件管理</a>
-                <a data-id="script">自定义脚本</a>
-            </nav>
+    </div>
+
+    <!-- 卡密 -->
+    <div class="card" style="border:2px solid #2b6f9e; background:#f0f7fe;">
+        <h3>🔑 升级至高级版</h3>
+        <div class="license-input-row">
+            <input type="text" id="licenseKeyInput" placeholder="请输入卡密">
+            <button class="btn btn-success" onclick="verifyLicense()">验证卡密</button>
+            <span id="licenseMsg" style="font-size:14px; color:#666;"></span>
         </div>
-    </aside>
+        <div style="font-size:13px; color:#6a8aa8;">标准版功能免费，高级功能需卡密激活。</div>
+    </div>
 
-    <!-- ===== 主内容 ===== -->
-    <main class="main">
-        <div class="main-scroll" id="mainScroll">
+    <!-- ====== 基础功能 ====== -->
+    <div class="card">
+        <h3>📂 打开路径</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="pathInput" value="C:\">
+            <button class="btn btn-primary" onclick="sendOpen()">打开</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="setPath('C:\\Users\\Public')">用户公共</button>
+            <button class="preset-btn" onclick="setPath('C:\\Windows')">Windows</button>
+            <button class="preset-btn" onclick="setPath('C:\\Program Files')">Program Files</button>
+        </div>
+    </div>
 
-            <!-- 顶部导航条 -->
-            <div class="top-nav">
-                <div class="page-info">
-                    当前：<strong id="currentNavLabel">简介</strong> &nbsp;·&nbsp;
-                    <span id="currentNavIndex">1 / 28</span>
+    <div class="card">
+        <h3>💬 弹窗</h3>
+        <div class="row">
+            <label>内容</label>
+            <input type="text" id="msgText" value="Hello from BJS!">
+        </div>
+        <div class="row">
+            <label>标题</label>
+            <input type="text" id="msgTitle" value="来自网页">
+        </div>
+        <div class="row">
+            <label>类型</label>
+            <select id="msgType">
+                <option value="info">info</option>
+                <option value="warning">warning</option>
+                <option value="error">error</option>
+                <option value="question">question</option>
+                <option value="yesno">yesno</option>
+                <option value="okcancel">okcancel</option>
+                <option value="yesnocancel">yesnocancel</option>
+            </select>
+            <button class="btn btn-warning" onclick="sendMsg()">弹窗</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="presetMsg('欢迎使用BJS数据接力','欢迎','info')">欢迎(info)</button>
+            <button class="preset-btn" onclick="presetMsg('确认删除？','确认','yesno')">确认(yesno)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🖼️ 图片弹窗</h3>
+        <div class="row">
+            <label>图片地址</label>
+            <input type="text" id="imgUrl" value="https://www.python.org/static/img/python-logo.png">
+        </div>
+        <div class="row">
+            <label>说明</label>
+            <input type="text" id="imgCaption" value="Python 标志">
+        </div>
+        <div class="row">
+            <label>宽度</label>
+            <input type="number" id="imgWidth" value="500" style="flex:0.3;">
+            <label>高度</label>
+            <input type="number" id="imgHeight" value="400" style="flex:0.3;">
+            <button class="btn btn-primary" onclick="sendImage()">显示图片</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🚀 运行程序</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="runPath" value="C:\Windows\System32\notepad.exe">
+        </div>
+        <div class="row">
+            <label>参数</label>
+            <input type="text" id="runArgs" value="test.txt">
+        </div>
+        <div class="row">
+            <label><input type="checkbox" id="runWait"> 等待结束</label>
+            <button class="btn btn-success" onclick="sendRun()">运行</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="setRun('notepad.exe','')">记事本</button>
+            <button class="preset-btn" onclick="setRun('calc.exe','')">计算器</button>
+            <button class="preset-btn" onclick="setRun('mspaint.exe','')">画图</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🧩 自定义对话框</h3>
+        <div class="row">
+            <label>JSON配置</label>
+            <textarea id="dialogConfig" rows="5">{
+  "title": "用户信息",
+  "width": 450,
+  "height": 350,
+  "controls": [
+    {"type":"entry","label":"姓名","id":"name"},
+    {"type":"combobox","label":"性别","id":"gender","options":["男","女"]},
+    {"type":"checkbox","label":"爱好","id":"hobby","options":["读书","音乐"],"default":["读书"]}
+  ],
+  "buttons":["提交","取消"]
+}</textarea>
+        </div>
+        <div class="row">
+            <button class="btn btn-purple" onclick="sendDialog()">发送对话框</button>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="loadDialogPreset('input')">输入框</button>
+            <button class="preset-btn" onclick="loadDialogPreset('checkbox')">多选</button>
+            <button class="preset-btn" onclick="loadDialogPreset('progress')">进度条</button>
+        </div>
+    </div>
+
+    <!-- ====== 文件操作 ====== -->
+    <div class="card">
+        <h3>📂 文件浏览器</h3>
+        <div class="row">
+            <input type="text" id="browsePath" value="C:\">
+            <button class="btn btn-primary" onclick="browse()">浏览</button>
+        </div>
+        <div id="fileList"><p style="color:#6a8aa8;">点击浏览加载</p></div>
+        <div id="fileContent" style="display:none; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong id="fileContentTitle">文件内容</strong>
+                <button class="btn btn-sm" onclick="document.getElementById('fileContent').style.display='none'">关闭</button>
+            </div>
+            <div class="log-viewer" id="fileContentText"></div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+            <button class="btn btn-sm btn-success" onclick="mkdir()">新建文件夹</button>
+            <button class="btn btn-sm btn-primary" onclick="renameSelected()">重命名</button>
+            <button class="btn btn-sm btn-danger" onclick="delSelected()">删除</button>
+            <button class="btn btn-sm btn-warning" onclick="recycleSelected()">移至回收站</button>
+            <button class="btn btn-sm" onclick="revealSelected()">在资源管理器显示</button>
+            <button class="btn btn-sm" onclick="infoSelected()">属性</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>✍️ 写入文件</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="writePath" value="C:\test\hello.txt">
+        </div>
+        <div class="row">
+            <label>内容</label>
+            <textarea id="writeContent" rows="3">Hello BJS!</textarea>
+        </div>
+        <div class="row">
+            <label>编码</label>
+            <select id="writeEncoding" style="flex:0.4;">
+                <option value="utf-8">UTF-8</option>
+                <option value="gbk">GBK</option>
+                <option value="utf-8-sig">UTF-8 BOM</option>
+            </select>
+            <label><input type="checkbox" id="writeAppend"> 追加模式</label>
+            <button class="btn btn-primary" onclick="execWrite()">写入</button>
+        </div>
+        <div id="writeResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h3>🔎 文本替换</h3>
+        <div class="row">
+            <label>文件路径</label>
+            <input type="text" id="replacePath" value="C:\test\config.ini">
+        </div>
+        <div class="row">
+            <label>查找</label>
+            <input type="text" id="replaceFind" value="old_value">
+        </div>
+        <div class="row">
+            <label>替换为</label>
+            <input type="text" id="replaceWith" value="new_value">
+        </div>
+        <div class="row">
+            <label><input type="checkbox" id="replaceRegex"> 使用正则</label>
+            <label>次数</label>
+            <input type="number" id="replaceCount" value="0" style="flex:0.3;" placeholder="0=全部">
+            <button class="btn btn-primary" onclick="execReplace()">替换</button>
+        </div>
+        <div id="replaceResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h3>📊 文件/目录信息</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="infoPath" value="C:\test">
+            <button class="btn btn-primary" onclick="execFileInfo()">详细信息</button>
+            <button class="btn btn-success" onclick="execDirSize()">目录大小</button>
+        </div>
+        <div id="infoResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- ====== Windows 优化 ====== -->
+    <div class="win-section">
+        <h2>🪟 Windows 专属功能</h2>
+
+        <div class="card" style="margin-top:10px;">
+            <h3>🔖 文件属性（隐藏/只读/系统/归档）</h3>
+            <div class="row">
+                <label>路径</label>
+                <input type="text" id="attrPath" value="C:\test\secret.txt">
+            </div>
+            <div class="row">
+                <label><input type="checkbox" id="attrHidden"> 隐藏</label>
+                <label><input type="checkbox" id="attrReadonly"> 只读</label>
+                <label><input type="checkbox" id="attrSystem"> 系统</label>
+                <label><input type="checkbox" id="attrArchive"> 归档</label>
+                <button class="btn btn-warning" onclick="execSetAttr()">应用</button>
+            </div>
+            <div id="attrResult" class="result-box" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h3>🔔 系统通知</h3>
+            <div class="row">
+                <label>标题</label>
+                <input type="text" id="notifyTitle" value="BJS 数据接力">
+            </div>
+            <div class="row">
+                <label>内容</label>
+                <input type="text" id="notifyMsg" value="任务已完成">
+            </div>
+            <div class="row">
+                <button class="btn btn-primary" onclick="execNotify()">发送通知</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 高级功能 ====== -->
+    <div class="advanced-section">
+        <h2>⭐ 高级功能 <span id="advStatus" style="font-size:14px; color:#6a8aa8;">(标准版)</span></h2>
+        <div style="margin-top:10px;">
+
+            <div class="card">
+                <h3>📝 批量重命名</h3>
+                <div class="row">
+                    <label>目录</label>
+                    <input type="text" id="renamePath" value="C:\test">
                 </div>
-                <div class="nav-buttons">
-                    <button id="prevBtn" onclick="navigate(-1)">← 上一项</button>
-                    <button id="nextBtn" onclick="navigate(1)">下一项 →</button>
+                <div class="row">
+                    <label>匹配</label>
+                    <input type="text" id="renamePattern" value="IMG_(\d+)">
+                    <label>替换</label>
+                    <input type="text" id="renameRepl" value="photo_$1">
+                </div>
+                <div class="row">
+                    <label><input type="checkbox" id="renamePreview" checked> 预览</label>
+                    <button class="btn btn-primary" id="btnRename" disabled onclick="execRename()">执行重命名</button>
+                </div>
+                <div id="renameResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔄 目录同步</h3>
+                <div class="row">
+                    <label>源</label>
+                    <input type="text" id="syncSrc" value="C:\source">
+                    <label>目标</label>
+                    <input type="text" id="syncDest" value="C:\backup">
+                </div>
+                <div class="row">
+                    <label>模式</label>
+                    <select id="syncMode">
+                        <option value="mirror">镜像</option>
+                        <option value="merge">合并</option>
+                        <option value="update">更新</option>
+                    </select>
+                    <label>排除</label>
+                    <input type="text" id="syncExclude" value=".tmp,.log">
+                    <button class="btn btn-primary" id="btnSync" disabled onclick="execSync()">同步</button>
+                </div>
+                <div id="syncResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>⏰ 定时任务</h3>
+                <div class="row">
+                    <label>名称</label>
+                    <input type="text" id="scheduleName" value="每日备份">
+                    <label>表达式</label>
+                    <input type="text" id="scheduleExpr" value="0 2 * * *">
+                </div>
+                <div class="row">
+                    <label>动作</label>
+                    <input type="text" id="scheduleAction" value="sync">
+                    <button class="btn btn-primary" id="btnSchedule" disabled onclick="execSchedule()">添加任务</button>
                 </div>
             </div>
 
-            <!-- 内容容器 -->
-            <div id="contentContainer"></div>
+            <div class="card">
+                <h3>📋 剪贴板历史</h3>
+                <div class="row">
+                    <label>条数</label>
+                    <input type="number" id="clipLimit" value="10" style="flex:0.3;">
+                    <button class="btn btn-primary" id="btnClipHistory" disabled onclick="fetchClipHistory()">获取历史</button>
+                    <button class="btn btn-warning" id="btnClipRestore" disabled onclick="restoreClip()">恢复选中</button>
+                </div>
+                <div id="clipResult" class="result-box" style="display:none;"></div>
+            </div>
 
-            <div class="footer">BJS 数据接力 · HXZXS</div>
+            <div class="card">
+                <h3>👁️ 文件监听</h3>
+                <div class="row">
+                    <label>目录</label>
+                    <input type="text" id="watchPath" value="C:\incoming">
+                    <label>动作</label>
+                    <select id="watchAction" style="flex:0.4;">
+                        <option value="move">移动</option>
+                        <option value="copy">复制</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <label>目标</label>
+                    <input type="text" id="watchTarget" value="C:\archive">
+                    <label>过滤</label>
+                    <input type="text" id="watchFilter" value="*" style="flex:0.4;">
+                    <button class="btn btn-primary" id="btnWatch" disabled onclick="execWatch()">开始监听</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔍 全文搜索</h3>
+                <div class="row">
+                    <label>目录</label>
+                    <input type="text" id="searchPath" value="C:\documents">
+                    <label>关键词</label>
+                    <input type="text" id="searchKeyword" value="合同">
+                </div>
+                <div class="row">
+                    <label>类型</label>
+                    <input type="text" id="searchType" value="docx,pdf">
+                    <button class="btn btn-primary" id="btnSearch" disabled onclick="execSearch()">搜索</button>
+                </div>
+                <div id="searchResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>📜 版本历史</h3>
+                <div class="row">
+                    <label>文件</label>
+                    <input type="text" id="versionPath" value="C:\work\report.docx">
+                    <button class="btn btn-primary" id="btnVersions" disabled onclick="fetchVersions()">查看版本</button>
+                </div>
+                <div id="versionResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔁 重复文件查找</h3>
+                <div class="row">
+                    <label>目录</label>
+                    <input type="text" id="dupPath" value="C:\downloads">
+                    <label>最小大小(KB)</label>
+                    <input type="number" id="dupMinSize" value="1024" style="flex:0.3;">
+                </div>
+                <div class="row">
+                    <button class="btn btn-primary" id="btnDup" disabled onclick="execDup()">查找重复</button>
+                </div>
+                <div id="dupResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>📦 压缩包管理</h3>
+                <div class="row">
+                    <label>解压文件</label>
+                    <input type="text" id="archiveFile" value="C:\files.zip">
+                    <label>目标</label>
+                    <input type="text" id="archiveTarget" value="C:\extracted">
+                </div>
+                <div class="row">
+                    <button class="btn btn-primary" id="btnExtract" disabled onclick="execExtract()">解压</button>
+                    <button class="btn btn-success" id="btnCreate" disabled onclick="execCreate()">创建压缩包</button>
+                </div>
+                <div class="row" style="margin-top:4px;">
+                    <label>源(逗号分隔)</label>
+                    <input type="text" id="createSources" value="C:\docs,C:\photos">
+                    <label>输出</label>
+                    <input type="text" id="createTarget" value="C:\backup.zip">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🌐 局域网分享</h3>
+                <div class="row">
+                    <label>路径</label>
+                    <input type="text" id="sharePath" value="C:\share">
+                    <label>有效期(秒)</label>
+                    <input type="number" id="shareExpire" value="3600" style="flex:0.3;">
+                </div>
+                <div class="row">
+                    <label>访问密码</label>
+                    <input type="text" id="sharePassword" placeholder="留空表示无密码">
+                    <label><input type="checkbox" id="shareUpload"> 允许上传</label>
+                    <label><input type="checkbox" id="shareReadonly" checked> 只读</label>
+                </div>
+                <div class="row">
+                    <label>备注</label>
+                    <input type="text" id="shareNote" placeholder="可选">
+                    <button class="btn btn-primary" id="btnShare" disabled onclick="execShare()">生成链接</button>
+                    <button class="btn btn-success" id="btnShareList" disabled onclick="listShares()">会话列表</button>
+                </div>
+                <div id="shareResult" class="result-box" style="display:none;"></div>
+                <div id="shareListResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>🆘 远程协助</h3>
+                <div class="row">
+                    <label>有效期(秒)</label>
+                    <input type="number" id="remoteExpire" value="300" style="flex:0.3;">
+                    <button class="btn btn-primary" id="btnRemote" disabled onclick="execRemote()">生成令牌</button>
+                </div>
+                <div id="remoteResult" class="result-box" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <h3>📱 多设备同步</h3>
+                <div class="row">
+                    <label>设备ID</label>
+                    <input type="text" id="deviceId" value="laptop-001">
+                    <label>同步目录</label>
+                    <input type="text" id="deviceSyncPath" value="D:\bjs_data">
+                </div>
+                <div class="row">
+                    <label><input type="checkbox" id="deviceAuto"> 自动同步</label>
+                    <button class="btn btn-primary" id="btnDevice" disabled onclick="execDevice()">配置设备</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔌 插件管理</h3>
+                <div class="row">
+                    <label>安装源</label>
+                    <input type="text" id="pluginSource" placeholder="URL 或本地路径">
+                    <label>名称</label>
+                    <input type="text" id="pluginName" value="backup-tool">
+                </div>
+                <div class="row">
+                    <button class="btn btn-primary" id="btnPluginInstall" disabled onclick="execPluginInstall()">安装插件</button>
+                    <button class="btn btn-warning" id="btnPluginExec" disabled onclick="execPluginExec()">执行插件</button>
+                </div>
+                <div class="row" style="margin-top:4px;">
+                    <label>插件名</label>
+                    <input type="text" id="pluginExecName" value="backup-tool">
+                    <label>动作</label>
+                    <input type="text" id="pluginAction" value="backup_now">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🧾 自定义脚本</h3>
+                <div class="row">
+                    <label>脚本</label>
+                    <textarea id="scriptContent" rows="3">print('Hello from BJS')</textarea>
+                </div>
+                <div class="row">
+                    <label>超时(秒)</label>
+                    <input type="number" id="scriptTimeout" value="10" style="flex:0.3;">
+                    <button class="btn btn-primary" id="btnScript" disabled onclick="execScript()">执行脚本</button>
+                </div>
+                <div id="scriptResult" class="result-box" style="display:none;"></div>
+            </div>
         </div>
-    </main>
+    </div>
+
+    <div class="card">
+        <h3>📜 运行日志</h3>
+        <div class="row">
+            <button class="btn btn-sm" onclick="fetchLog()">刷新</button>
+            <label>行数</label>
+            <select id="logLines" onchange="fetchLog()">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+            </select>
+        </div>
+        <div class="log-viewer" id="logDisplay">点击刷新加载</div>
+    </div>
 </div>
 
 <script>
-    // ============================================================
-    //  数据定义
-    // ============================================================
-    const API_BASE = 'http://127.0.0.1:8765';
+const API_BASE = 'http://127.0.0.1:8765';
+let selectedPath = '';
+let licenseValid = false;
 
-    // 每个 API 的详细描述（文案手工打磨，自然无 AI 味）
-    const apiData = [
-        {
-            id: 'intro',
-            name: '简介',
-            method: '',
-            path: '',
-            desc: 'BJS 数据接力是一个本地 HTTP 服务，通过 API 让网页或脚本调用系统功能。<br><br>' +
-                  '基础功能无需任何授权，开箱即用。高级功能（如定时任务、文件监听、版本历史等）需要有效的卡密激活。<br><br>' +
-                  '服务默认监听 <code>127.0.0.1:8765</code>，所有接口返回统一的 JSON 结构：<br>' +
-                  '<code>{"code":0, "msg":"ok", "data": {...}}</code> 其中 <code>code===0</code> 表示成功。',
-            params: [],
-            example: '',
-            response: '',
-            hideTest: true
-        },
-        // ----- 基础 -----
-        {
-            id: 'health',
-            name: '健康检查',
-            method: 'GET',
-            path: '/health',
-            desc: '检测服务是否正常运行。啥参数都不用，能通就说明 BJS 还活着。<br><br>' +
-                  '通常用于前端判断服务状态，或者写监控脚本时先用这个接口探路。',
-            params: [],
-            example: 'GET /health',
-            response: '{"code":0,"status":"running","port":8765}'
-        },
-        {
-            id: 'open',
-            name: '打开路径',
-            method: 'GET',
-            path: '/api/open',
-            desc: '用系统默认程序打开文件或文件夹。传入绝对路径，支持 Windows 和 macOS。<br><br>' +
-                  '比如传入 <code>C:\\Users</code> 会打开资源管理器；传入 <code>C:\\test.txt</code> 会用记事本打开。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '本地绝对路径' }
-            ],
-            example: 'GET /api/open?path=C:\\Users',
-            response: '{"code":0,"msg":"ok","data":{"path":"C:\\Users"}}'
-        },
-        {
-            id: 'msg',
-            name: '弹窗消息',
-            method: 'POST',
-            path: '/api/msg',
-            desc: '在电脑上弹出一个系统消息框。支持 7 种类型，最常用的就是 info、yesno 和 error。<br><br>' +
-                  '传 <code>image</code> 参数还能显示图片弹窗，适合做通知或提醒。',
-            params: [
-                { name: 'text', type: 'text', required: true, desc: '消息内容' },
-                { name: 'title', type: 'text', required: false, desc: '窗口标题，默认为"来自网页"' },
-                { name: 'type', type: 'select', required: false, desc: '类型', options: ['info', 'warning', 'error', 'question', 'yesno', 'okcancel', 'yesnocancel'] },
-                { name: 'image', type: 'text', required: false, desc: '图片地址（网络或本地路径）' },
-                { name: 'width', type: 'number', required: false, desc: '图片弹窗宽度' },
-                { name: 'height', type: 'number', required: false, desc: '图片弹窗高度' }
-            ],
-            example: 'POST /api/msg {"text":"Hello from BJS","type":"yesno"}',
-            response: '{"code":0,"msg":"ok","data":true}'
-        },
-        {
-            id: 'run',
-            name: '运行程序',
-            method: 'POST',
-            path: '/api/run',
-            desc: '启动一个本地程序。可以带参数，也可以选择等待程序结束再返回。<br><br>' +
-                  '特别适合做自动化流程：先启动一个程序执行任务，等它跑完再继续下一步。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '程序路径' },
-                { name: 'args', type: 'text', required: false, desc: '命令行参数' },
-                { name: 'wait', type: 'checkbox', required: false, desc: '是否等待程序结束' }
-            ],
-            example: 'POST /api/run {"path":"notepad.exe","args":"test.txt"}',
-            response: '{"code":0,"msg":"程序已启动","data":{"cmd":"notepad.exe test.txt"}}'
-        },
-        {
-            id: 'dialog',
-            name: '自定义对话框',
-            method: 'POST',
-            path: '/api/dialog',
-            desc: '用 JSON 描述一个复杂的对话框，支持输入框、下拉框、复选框、进度条等控件。<br><br>' +
-                  '比普通弹窗灵活多了，适合做用户交互面板。用户点按钮后会把输入的内容返回给你。',
-            params: [
-                { name: 'config', type: 'textarea', required: true, desc: 'JSON 格式的对话框配置' }
-            ],
-            example: 'POST /api/dialog {"config":"{\\"title\\":\\"输入\\",\\"controls\\":[{\\"type\\":\\"entry\\",\\"label\\":\\"姓名\\"}],\\"buttons\\":[\\"确定\\"]}"}',
-            response: '{"code":0,"msg":"ok","data":{"button":"确定","values":{"name":"张三"}}}'
-        },
-        {
-            id: 'listdir',
-            name: '列出目录',
-            method: 'GET',
-            path: '/api/listdir',
-            desc: '读取目录下的文件和子文件夹列表，返回名称、大小、修改时间等信息。<br><br>' +
-                  '默认按文件夹优先、名称排序，方便浏览。不传 path 的话会返回用户主目录。',
-            params: [
-                { name: 'path', type: 'text', required: false, desc: '目录路径，默认为用户主目录' }
-            ],
-            example: 'GET /api/listdir?path=C:\\',
-            response: '{"code":0,"data":[{"name":"Users","is_dir":true,"size":0,"mtime":"2026-08-10 12:00:00"}]}'
-        },
-        {
-            id: 'readfile',
-            name: '读取文本文件',
-            method: 'GET',
-            path: '/api/readfile',
-            desc: '读取文本文件内容，自动尝试 UTF-8 和 GBK 编码，省得你猜字符集。<br><br>' +
-                  '只能读纯文本文件，二进制文件就别来了。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '文件路径' }
-            ],
-            example: 'GET /api/readfile?path=C:\\test.txt',
-            response: '{"code":0,"data":"文件内容..."}'
-        },
-        {
-            id: 'mkdir',
-            name: '创建文件夹',
-            method: 'POST',
-            path: '/api/mkdir',
-            desc: '新建一个文件夹。如果路径已经存在会返回错误。<br><br>' +
-                  '会自动创建中间缺失的目录，比如 <code>C:\\a\\b\\c</code> 如果 a 和 b 都不存在，会一并创建。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '要创建的目录路径' }
-            ],
-            example: 'POST /api/mkdir {"path":"C:\\新建文件夹"}',
-            response: '{"code":0}'
-        },
-        {
-            id: 'delete',
-            name: '删除',
-            method: 'POST',
-            path: '/api/delete',
-            desc: '删除文件或文件夹。如果是文件夹且 <code>recursive</code> 为 true，会连里面的东西一起删掉。<br><br>' +
-                  '小心用，删了就没了。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '要删除的路径' },
-                { name: 'recursive', type: 'checkbox', required: false, desc: '是否递归删除文件夹' }
-            ],
-            example: 'POST /api/delete {"path":"C:\\temp","recursive":true}',
-            response: '{"code":0}'
-        },
-        {
-            id: 'copy',
-            name: '复制',
-            method: 'POST',
-            path: '/api/copy',
-            desc: '复制文件或文件夹到目标位置。文件夹会整个复制过去。<br><br>' +
-                  '如果目标已存在，会覆盖（文件）或合并（文件夹）。',
-            params: [
-                { name: 'src', type: 'text', required: true, desc: '源路径' },
-                { name: 'dest', type: 'text', required: true, desc: '目标路径' }
-            ],
-            example: 'POST /api/copy {"src":"C:\\a.txt","dest":"D:\\b.txt"}',
-            response: '{"code":0}'
-        },
-        {
-            id: 'move',
-            name: '移动',
-            method: 'POST',
-            path: '/api/move',
-            desc: '移动文件或文件夹到目标位置。其实就是剪切粘贴。<br><br>' +
-                  '跨盘符移动会复制再删除，同盘符就是重命名操作，速度很快。',
-            params: [
-                { name: 'src', type: 'text', required: true, desc: '源路径' },
-                { name: 'dest', type: 'text', required: true, desc: '目标路径' }
-            ],
-            example: 'POST /api/move {"src":"C:\\a.txt","dest":"D:\\b.txt"}',
-            response: '{"code":0}'
-        },
-        {
-            id: 'lanzou',
-            name: '蓝奏云下载',
-            method: 'POST',
-            path: '/api/lanzou/download',
-            desc: '解析蓝奏云分享链接，把文件下载到本地。支持有密码的分享。<br><br>' +
-                  '返回下载后的文件路径和文件名，省得自己扒真实下载地址。',
-            params: [
-                { name: 'url', type: 'text', required: true, desc: '蓝奏云分享链接' },
-                { name: 'pwd', type: 'text', required: false, desc: '提取密码' },
-                { name: 'save_path', type: 'text', required: false, desc: '保存路径（目录或完整路径）' }
-            ],
-            example: 'POST /api/lanzou/download {"url":"https://xxx.lanzouw.com/xxx","pwd":"h0fv"}',
-            response: '{"code":0,"data":{"filename":"file.zip","save_path":"D:\\downloads\\file.zip"}}'
-        },
-        {
-            id: 'log',
-            name: '查看日志',
-            method: 'GET',
-            path: '/api/log',
-            desc: '获取 BJS 后端的运行日志。默认返回最近 100 行。<br><br>' +
-                  '用来排查问题最方便，看看服务干了什么、报了什么错。',
-            params: [
-                { name: 'lines', type: 'number', required: false, desc: '返回行数' }
-            ],
-            example: 'GET /api/log?lines=50',
-            response: '{"code":0,"data":"[2026-08-13 12:00:00] INFO: 服务启动"}'
-        },
-        {
-            id: 'sysinfo',
-            name: '系统信息',
-            method: 'GET',
-            path: '/api/sysinfo',
-            desc: '获取电脑的基本信息：操作系统、CPU 核心数、内存大小、磁盘使用情况。<br><br>' +
-                  '如果装了 psutil 会返回详细信息，没装的话返回基础数据。',
-            params: [],
-            example: 'GET /api/sysinfo',
-            response: '{"code":0,"data":{"system":"Windows","release":"10","cpu_count":8,"memory_total":16384}}'
-        },
+function $(id) { return document.getElementById(id); }
 
-        // ----- 高级（需卡密） -----
-        {
-            id: 'batch-rename',
-            name: '批量重命名',
-            method: 'POST',
-            path: '/api/advanced/batch-rename',
-            desc: '用正则表达式批量重命名文件。先预览再执行，防止手滑。<br><br>' +
-                  '比如把 <code>IMG_001.jpg</code> 重命名为 <code>photo_001.jpg</code>，用正则 <code>IMG_(\\d+)</code> 替换成 <code>photo_$1</code>。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '目录路径' },
-                { name: 'pattern', type: 'text', required: true, desc: '正则匹配模式' },
-                { name: 'replacement', type: 'text', required: true, desc: '替换内容' },
-                { name: 'preview', type: 'checkbox', required: false, desc: '是否预览（不实际重命名）' }
-            ],
-            example: 'POST /api/advanced/batch-rename {"path":"C:\\photos","pattern":"IMG_(\\d+)","replacement":"photo_$1","preview":true}',
-            response: '{"code":0,"data":{"preview":true,"results":[{"old":"IMG_001.jpg","new":"photo_001.jpg","will_change":true}]}}'
-        },
-        {
-            id: 'sync',
-            name: '目录同步',
-            method: 'POST',
-            path: '/api/advanced/sync',
-            desc: '把源目录的内容同步到目标目录。有三种模式：<br>' +
-                  '• <strong>mirror</strong>：完全镜像，目标会跟源一模一样（多余文件会被删掉）<br>' +
-                  '• <strong>merge</strong>：合并，只新增和更新，不删东西<br>' +
-                  '• <strong>update</strong>：只更新已有文件，不新增不删除<br><br>' +
-                  '适合做备份或者多台电脑之间的文件同步。',
-            params: [
-                { name: 'src', type: 'text', required: true, desc: '源目录' },
-                { name: 'dest', type: 'text', required: true, desc: '目标目录' },
-                { name: 'mode', type: 'select', required: false, desc: '同步模式', options: ['mirror', 'merge', 'update'] },
-                { name: 'exclude', type: 'text', required: false, desc: '排除的后缀（逗号分隔）' }
-            ],
-            example: 'POST /api/advanced/sync {"src":"C:\\work","dest":"E:\\backup","mode":"mirror","exclude":[".tmp"]}',
-            response: '{"code":0,"msg":"同步完成"}'
-        },
-        {
-            id: 'schedule',
-            name: '定时任务',
-            method: 'POST',
-            path: '/api/advanced/schedule',
-            desc: '添加一个定时任务，到时间自动执行指定的动作。<br><br>' +
-                  '触发器支持 cron 表达式（比如 <code>0 2 * * *</code> 表示每天凌晨两点）或者 interval 秒数。<br>' +
-                  '目前动作只实现了 <code>sync</code>（目录同步），后面会加更多。',
-            params: [
-                { name: 'name', type: 'text', required: true, desc: '任务名称（唯一）' },
-                { name: 'trigger', type: 'select', required: true, desc: '触发器类型', options: ['cron', 'interval'] },
-                { name: 'expression', type: 'text', required: true, desc: 'cron表达式或秒数' },
-                { name: 'action', type: 'text', required: true, desc: '动作（目前仅支持 sync）' },
-                { name: 'params', type: 'text', required: false, desc: '动作参数的 JSON' }
-            ],
-            example: 'POST /api/advanced/schedule {"name":"dailybackup","trigger":"cron","expression":"0 2 * * *","action":"sync","params":{"src":"C:\\data","dest":"E:\\backup"}}',
-            response: '{"code":0,"msg":"任务 \'dailybackup\' 已添加"}'
-        },
-        {
-            id: 'clipboard',
-            name: '剪贴板历史',
-            method: 'GET',
-            path: '/api/advanced/clipboard/history',
-            desc: '获取剪贴板的最近历史记录。最多存 100 条，多了会顶掉旧的。<br><br>' +
-                  '配合恢复接口用，可以找回之前复制过的内容。',
-            params: [
-                { name: 'limit', type: 'number', required: false, desc: '返回条数' }
-            ],
-            example: 'GET /api/advanced/clipboard/history?limit=10',
-            response: '{"code":0,"data":["文本1","文本2"]}'
-        },
-        {
-            id: 'watch',
-            name: '文件监听',
-            method: 'POST',
-            path: '/api/advanced/watch',
-            desc: '监听一个目录，当有文件创建或修改时，自动执行动作（移动或复制）。<br><br>' +
-                  '用来做自动归档特别方便：比如把下载目录里新建的 PDF 自动挪到指定文件夹。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '要监听的目录' },
-                { name: 'events', type: 'text', required: false, desc: '事件类型（create, modify，默认 create）' },
-                { name: 'filter', type: 'text', required: false, desc: '文件扩展名过滤（比如 .pdf）' },
-                { name: 'action', type: 'select', required: true, desc: '动作', options: ['move', 'copy'] },
-                { name: 'target', type: 'text', required: true, desc: '目标目录' }
-            ],
-            example: 'POST /api/advanced/watch {"path":"C:\\incoming","action":"move","target":"C:\\archive"}',
-            response: '{"code":0,"msg":"已开始监听 C:\\incoming"}'
-        },
-        {
-            id: 'search',
-            name: '全文搜索',
-            method: 'POST',
-            path: '/api/advanced/search',
-            desc: '在指定目录里搜索文件。既可以搜文件名，也可以搜文件内容。<br><br>' +
-                  '可以按扩展名过滤，结果最多返回 100 条，防止炸掉。适合找合同、代码之类的。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '搜索目录' },
-                { name: 'keyword', type: 'text', required: true, desc: '搜索关键词' },
-                { name: 'filetype', type: 'text', required: false, desc: '扩展名过滤（逗号分隔）' }
-            ],
-            example: 'POST /api/advanced/search {"path":"C:\\documents","keyword":"合同","filetype":"docx,pdf"}',
-            response: '{"code":0,"data":[{"path":"C:\\documents\\合同.docx","type":"filename"}]}'
-        },
-        {
-            id: 'versions',
-            name: '版本管理',
-            method: 'GET / POST',
-            path: '/api/advanced/versions / restore',
-            desc: '文件每次修改时，BJS 会自动保存一个历史副本。<br><br>' +
-                  '用 <code>GET</code> 查看所有版本，用 <code>POST /restore</code> 恢复到指定版本。<br>' +
-                  '版本按时间戳命名，看得清楚。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '文件路径' },
-                { name: 'version', type: 'text', required: false, desc: '要恢复的版本号（POST 时必填）' }
-            ],
-            example: 'GET /api/advanced/versions?path=C:\\report.docx',
-            response: '{"code":0,"data":[{"version":"20260810_143022","file":"20260810_143022_report.docx","size":1024,"mtime":"2026-08-10 14:30:22"}]}'
-        },
-        {
-            id: 'duplicates',
-            name: '重复文件查找',
-            method: 'POST',
-            path: '/api/advanced/duplicates',
-            desc: '扫描一个目录，找出内容重复的文件。基于 MD5 或 SHA1 哈希判断。<br><br>' +
-                  '返回每个重复组的文件列表，方便你清理多余的备份。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '扫描目录' },
-                { name: 'algorithm', type: 'select', required: false, desc: '哈希算法', options: ['md5', 'sha1'] },
-                { name: 'min_size', type: 'number', required: false, desc: '最小文件大小（字节）' }
-            ],
-            example: 'POST /api/advanced/duplicates {"path":"C:\\downloads","algorithm":"md5","min_size":1024}',
-            response: '{"code":0,"data":[{"hash":"abc123","paths":["C:\\downloads\\a.txt","C:\\downloads\\b.txt"]}]}'
-        },
-        {
-            id: 'archive',
-            name: '压缩包管理',
-            method: 'POST',
-            path: '/api/advanced/archive/extract / create',
-            desc: '解压或创建 ZIP 压缩包。<br><br>' +
-                  '解压：把 zip 文件解到指定目录。<br>' +
-                  '创建：把一批文件或文件夹打包成一个 zip。密码功能先占位，后面补上。',
-            params: [
-                { name: 'archive', type: 'text', required: true, desc: '压缩包路径（解压用）' },
-                { name: 'target', type: 'text', required: true, desc: '目标目录（解压用）' },
-                { name: 'sources', type: 'text', required: false, desc: '源文件/目录列表（创建用，逗号分隔）' }
-            ],
-            example: 'POST /api/advanced/archive/extract {"archive":"C:\\files.zip","target":"C:\\extracted"}',
-            response: '{"code":0,"msg":"解压完成"}'
-        },
-        {
-            id: 'share',
-            name: '局域网分享',
-            method: 'POST',
-            path: '/api/advanced/share',
-            desc: '生成一个临时链接，让同一局域网的人可以访问你电脑上的文件。<br><br>' +
-                  '目前是占位功能，实际还没实现真正的 HTTP 文件服务。先留着接口，后面补。',
-            params: [
-                { name: 'path', type: 'text', required: true, desc: '分享路径' },
-                { name: 'expires_in', type: 'number', required: false, desc: '有效期（秒）' }
-            ],
-            example: 'POST /api/advanced/share {"path":"C:\\share","expires_in":3600}',
-            response: '{"code":0,"data":{"url":"http://127.0.0.1:8765/share/placeholder"}}'
-        },
-        {
-            id: 'remote',
-            name: '远程协助',
-            method: 'POST',
-            path: '/api/advanced/remote/token',
-            desc: '生成一个临时令牌，允许别人通过浏览器临时操作你的文件。<br><br>' +
-                  '也是占位功能，后面会实现在线文件浏览和下载。',
-            params: [
-                { name: 'expires_in', type: 'number', required: false, desc: '有效期（秒）' }
-            ],
-            example: 'POST /api/advanced/remote/token {"expires_in":300}',
-            response: '{"code":0,"data":{"token":"abc123","url":"https://bjs.example.com/remote/abc123"}}'
-        },
-        {
-            id: 'device',
-            name: '多设备同步',
-            method: 'POST',
-            path: '/api/advanced/sync/device',
-            desc: '配置多个设备之间的同步。目前只是个占位，后面会整合真正的设备间同步逻辑。<br><br>' +
-                  '把设备 ID 和同步目录记下来，方便以后扩展。',
-            params: [
-                { name: 'device_id', type: 'text', required: true, desc: '设备标识' },
-                { name: 'sync_path', type: 'text', required: true, desc: '同步目录' },
-                { name: 'auto_sync', type: 'checkbox', required: false, desc: '是否自动同步' }
-            ],
-            example: 'POST /api/advanced/sync/device {"device_id":"laptop-001","sync_path":"D:\\bjs_data"}',
-            response: '{"code":0,"msg":"设备同步已配置（占位）"}'
-        },
-        {
-            id: 'plugin',
-            name: '插件管理',
-            method: 'POST',
-            path: '/api/advanced/plugin/install / exec',
-            desc: '安装和执行插件。插件机制还在开发中，现在只能先占位。<br><br>' +
-                  '以后可以直接通过 API 安装第三方的功能扩展。',
-            params: [
-                { name: 'source', type: 'text', required: true, desc: '插件源 URL' },
-                { name: 'name', type: 'text', required: true, desc: '插件名称' }
-            ],
-            example: 'POST /api/advanced/plugin/install {"source":"https://plugins.bjs.com/backup-tool.bjs","name":"backup-tool"}',
-            response: '{"code":0,"msg":"插件安装占位"}'
-        },
-        {
-            id: 'script',
-            name: '自定义脚本',
-            method: 'POST',
-            path: '/api/advanced/script/exec',
-            desc: '上传一段 Python 代码，让 BJS 帮你执行。<br><br>' +
-                  '适合做一些临时的自动化操作，比如文件整理、数据处理。注意安全，别传危险的代码。',
-            params: [
-                { name: 'script', type: 'textarea', required: true, desc: 'Python 脚本内容' },
-                { name: 'timeout', type: 'number', required: false, desc: '超时时间（秒）' }
-            ],
-            example: 'POST /api/advanced/script/exec {"script":"print(\'hello\')"}',
-            response: '{"code":0,"msg":"脚本执行完成"}'
+// ---------- 健康检查 ----------
+async function checkHealth() {
+    const dot = $('statusDot'), txt = $('statusText');
+    try {
+        const resp = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
+        if (resp.ok) {
+            dot.className = 'status-dot online';
+            const j = await resp.json();
+            txt.textContent = '服务在线 ' + (j.version || '');
+            return true;
         }
-    ];
+    } catch (e) {}
+    dot.className = 'status-dot offline';
+    txt.textContent = '服务不可用';
+    return false;
+}
 
-    // ============================================================
-    //  状态 & 渲染
-    // ============================================================
-    let currentIndex = 0;
-    const total = apiData.length;
-
-    function renderDetail(index) {
-        const item = apiData[index];
-        if (!item) return;
-
-        const container = document.getElementById('contentContainer');
-        const label = document.getElementById('currentNavLabel');
-        const idxSpan = document.getElementById('currentNavIndex');
-
-        // 更新导航信息
-        label.textContent = item.name;
-        idxSpan.textContent = (index + 1) + ' / ' + total;
-
-        // 更新按钮状态
-        document.getElementById('prevBtn').disabled = (index === 0);
-        document.getElementById('nextBtn').disabled = (index === total - 1);
-
-        // 更新侧边栏高亮
-        document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
-        const targetLink = document.querySelector(`.sidebar-nav a[data-id="${item.id}"]`);
-        if (targetLink) targetLink.classList.add('active');
-
-        // 如果是简介页，特殊渲染
-        if (item.id === 'intro') {
-            container.innerHTML = `
-                <div class="api-detail">
-                    <div class="api-name" style="margin-bottom:8px;">📖 简介</div>
-                    <div class="api-desc" style="border-left-color:#27ae60; background:#f4faf7;">
-                        ${item.desc}
-                    </div>
-                    <div style="margin-top:12px; color:#4a6a8a; font-size:14px;">
-                        <strong>侧边栏</strong> 列出所有接口，点哪个看哪个。<br>
-                        <strong>上下按钮</strong> 可以逐个翻页，方便快速浏览。
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        // 构建参数表格
-        let paramsHtml = '';
-        if (item.params && item.params.length > 0) {
-            paramsHtml = `
-                <table class="params-table">
-                    <thead><tr><th>参数名</th><th>类型</th><th>说明</th><th>必填</th></tr></thead>
-                    <tbody>
-                        ${item.params.map(p => `
-                            <tr>
-                                <td><code>${p.name}</code></td>
-                                <td>${p.type === 'select' ? '选择' : p.type === 'checkbox' ? '布尔' : p.type === 'textarea' ? '文本' : p.type === 'number' ? '数字' : '文本'}</td>
-                                <td>${p.desc}</td>
-                                <td>${p.required ? '<span class="required">必填</span>' : '<span class="optional">可选</span>'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-        }
-
-        // 构建测试工具
-        let testHtml = '';
-        if (!item.hideTest) {
-            const inputRows = (item.params || []).map((p, idx) => {
-                let inputHtml = '';
-                if (p.type === 'select') {
-                    inputHtml = `<select id="test-in-${p.name}">${p.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
-                } else if (p.type === 'checkbox') {
-                    inputHtml = `<input type="checkbox" id="test-in-${p.name}">`;
-                } else if (p.type === 'textarea') {
-                    inputHtml = `<textarea id="test-in-${p.name}" rows="2" placeholder="输入 ${p.name}"></textarea>`;
-                } else if (p.type === 'number') {
-                    inputHtml = `<input type="number" id="test-in-${p.name}" placeholder="数字">`;
-                } else {
-                    inputHtml = `<input type="text" id="test-in-${p.name}" placeholder="输入 ${p.name}">`;
-                }
-                return `
-                    <div class="row">
-                        <label>${p.name}</label>
-                        ${inputHtml}
-                    </div>
-                `;
-            }).join('');
-
-            testHtml = `
-                <div class="test-section">
-                    <div style="font-weight:600; color:#1f3a4f; margin-bottom:10px;">在线测试</div>
-                    ${inputRows}
-                    <div class="btn-group">
-                        <button class="btn btn-success" onclick="testApi(${index})">测试 (${item.method})</button>
-                        <button class="btn btn-outline" onclick="clearResult(${index})">清空</button>
-                    </div>
-                    <div class="result-box" id="test-result-${index}">等待测试...</div>
-                </div>
-            `;
-        }
-
-        // 组装
-        container.innerHTML = `
-            <div class="api-detail">
-                <div class="api-head">
-                    ${item.method ? `<span class="method ${item.method.toLowerCase()}">${item.method}</span>` : ''}
-                    ${item.path ? `<span class="endpoint">${item.path}</span>` : ''}
-                    <span class="api-name">${item.name}</span>
-                </div>
-                <div class="api-desc">${item.desc}</div>
-
-                ${paramsHtml}
-
-                ${item.example ? `
-                    <div style="font-weight:600; color:#1f3a4f; margin-top:12px;">示例</div>
-                    <div class="example-block"><span class="label">请求</span>${item.example}</div>
-                ` : ''}
-
-                ${item.response ? `
-                    <div class="example-block" style="background:#2c3e50;"><span class="label">响应</span>${item.response}</div>
-                ` : ''}
-
-                ${testHtml}
-            </div>
-        `;
-    }
-
-    // ============================================================
-    //  导航函数
-    // ============================================================
-    function navigate(direction) {
-        const newIndex = currentIndex + direction;
-        if (newIndex < 0 || newIndex >= total) return;
-        currentIndex = newIndex;
-        renderDetail(currentIndex);
-        // 滚动到顶部
-        document.getElementById('mainScroll').scrollTop = 0;
-    }
-
-    // 侧边栏点击
-    function navigateTo(id) {
-        const idx = apiData.findIndex(item => item.id === id);
-        if (idx === -1) return;
-        currentIndex = idx;
-        renderDetail(currentIndex);
-        document.getElementById('mainScroll').scrollTop = 0;
-    }
-
-    // ============================================================
-    //  测试功能
-    // ============================================================
-    window.testApi = function(idx) {
-        const item = apiData[idx];
-        const resBox = document.getElementById('test-result-' + idx);
-        if (!resBox) return;
-        resBox.textContent = '请求中...';
-
-        try {
-            const params = {};
-            if (item.params) {
-                item.params.forEach(p => {
-                    const el = document.getElementById('test-in-' + p.name);
-                    if (!el) return;
-                    let val;
-                    if (p.type === 'checkbox') {
-                        val = el.checked;
-                    } else if (p.type === 'number') {
-                        val = parseFloat(el.value) || 0;
-                    } else {
-                        val = el.value || '';
-                    }
-                    if (val !== undefined && val !== '') {
-                        params[p.name] = val;
-                    }
-                });
-            }
-
-            const url = API_BASE + item.path;
-            const opts = { method: item.method, headers: { 'Content-Type': 'application/json' } };
-
-            if (item.method === 'GET') {
-                const qs = new URLSearchParams();
-                for (const k in params) {
-                    const v = params[k];
-                    if (v !== undefined && v !== '' && v !== false) {
-                        qs.append(k, v);
-                    }
-                }
-                const finalUrl = qs.toString() ? url + '?' + qs.toString() : url;
-                fetch(finalUrl)
-                    .then(r => r.json())
-                    .then(data => { resBox.textContent = JSON.stringify(data, null, 2); })
-                    .catch(err => { resBox.textContent = '请求失败：' + err.message; });
+// ---------- 授权 ----------
+async function refreshLicense() {
+    try {
+        const resp = await fetch(API_BASE + '/api/license/status');
+        const data = await resp.json();
+        if (data.code === 0 && data.data) {
+            licenseValid = data.data.valid === true;
+            const badge = $('licenseBadge');
+            const advStatus = $('advStatus');
+            if (licenseValid) {
+                badge.className = 'license-badge valid';
+                badge.textContent = '✅ 高级版 (已激活)';
+                advStatus.textContent = '(已授权)';
             } else {
-                opts.body = JSON.stringify(params);
-                fetch(url, opts)
-                    .then(r => r.json())
-                    .then(data => { resBox.textContent = JSON.stringify(data, null, 2); })
-                    .catch(err => { resBox.textContent = '请求失败：' + err.message; });
+                badge.className = 'license-badge invalid';
+                badge.textContent = '⚪ 标准版';
+                advStatus.textContent = '(标准版)';
             }
-        } catch (err) {
-            resBox.textContent = '请求失败：' + err.message;
+            setAdvancedButtons(licenseValid);
+            return licenseValid;
         }
-    };
+    } catch (e) {}
+    licenseValid = false;
+    setAdvancedButtons(false);
+    return false;
+}
 
-    window.clearResult = function(idx) {
-        const box = document.getElementById('test-result-' + idx);
-        if (box) box.textContent = '等待测试...';
-    };
-
-    // ============================================================
-    //  键盘快捷键
-    // ============================================================
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            navigate(-1);
-        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-            e.preventDefault();
-            navigate(1);
-        }
+function setAdvancedButtons(enabled) {
+    ['btnRename','btnSync','btnSchedule','btnClipHistory','btnClipRestore',
+     'btnWatch','btnSearch','btnVersions','btnDup','btnExtract','btnCreate',
+     'btnShare','btnShareList','btnRemote','btnDevice','btnPluginInstall',
+     'btnPluginExec','btnScript'].forEach(id => {
+        const btn = $(id);
+        if (btn) btn.disabled = !enabled;
     });
+}
 
-    // ============================================================
-    //  初始化
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', function() {
-        // 侧边栏点击事件
-        document.querySelectorAll('.sidebar-nav a').forEach(link => {
-            link.addEventListener('click', function(e) {
-                const id = this.getAttribute('data-id');
-                if (id) navigateTo(id);
-            });
+async function verifyLicense() {
+    const key = $('licenseKeyInput').value.trim();
+    if (!key) { $('licenseMsg').textContent = '请输入卡密'; return; }
+    $('licenseMsg').textContent = '验证中...';
+    try {
+        const resp = await fetch(API_BASE + '/api/license/verify', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({key})
         });
+        const data = await resp.json();
+        if (data.code === 0) {
+            $('licenseMsg').textContent = '✅ 验证成功！';
+            await refreshLicense();
+        } else {
+            $('licenseMsg').textContent = '❌ ' + (data.msg || '验证失败');
+        }
+    } catch (e) {
+        $('licenseMsg').textContent = '❌ 请求失败';
+    }
+}
 
-        // 默认选中第一个（简介）
-        currentIndex = 0;
-        renderDetail(0);
+async function callApi(method, endpoint, data=null) {
+    try {
+        const opts = { method, headers: {'Content-Type':'application/json'} };
+        if (data) opts.body = JSON.stringify(data);
+        const resp = await fetch(API_BASE + endpoint, opts);
+        return await resp.json();
+    } catch (e) {
+        console.error(e);
+        return { code: -1, msg: String(e) };
+    }
+}
+
+function showResult(id, data) {
+    const box = $(id);
+    if (!box) return;
+    box.style.display = 'block';
+    box.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+// ---------- 基础 ----------
+function setPath(v) { $('pathInput').value = v; }
+async function sendOpen() {
+    const path = $('pathInput').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/open?path=${encodeURIComponent(path)}`);
+    alert(res.code===0 ? '打开成功' : res.msg);
+}
+
+function presetMsg(text, title, type) {
+    $('msgText').value = text; $('msgTitle').value = title; $('msgType').value = type;
+}
+async function sendMsg() {
+    const text = $('msgText').value.trim();
+    if (!text) return alert('请输入内容');
+    const res = await callApi('POST', '/api/msg', {
+        text, title: $('msgTitle').value.trim() || '来自网页', type: $('msgType').value
     });
+    alert(res.code===0 ? '弹窗已显示' : res.msg);
+}
+
+async function sendImage() {
+    const src = $('imgUrl').value.trim();
+    if (!src) return alert('请输入图片地址');
+    const res = await callApi('POST', '/api/msg', {
+        text: $('imgCaption').value.trim() || '图片预览',
+        image: src,
+        width: parseInt($('imgWidth').value) || 0,
+        height: parseInt($('imgHeight').value) || 0,
+        title: '图片预览'
+    });
+    alert(res.code===0 ? '图片已显示' : res.msg);
+}
+
+function setRun(path, args) { $('runPath').value = path; $('runArgs').value = args || ''; }
+async function sendRun() {
+    const path = $('runPath').value.trim();
+    if (!path) return alert('请输入程序路径');
+    const res = await callApi('POST', '/api/run', {
+        path, args: $('runArgs').value.trim(), wait: $('runWait').checked
+    });
+    alert(res.code===0 ? '运行成功' : res.msg);
+}
+
+function loadDialogPreset(type) {
+    const presets = {
+        input: {title:'输入框', width:400, height:200,
+                controls:[{type:'entry',label:'姓名',id:'name'},{type:'entry',label:'年龄',id:'age'}],
+                buttons:['确定']},
+        checkbox: {title:'选择', width:400, height:250,
+                   controls:[{type:'checkbox',label:'爱好',id:'hobby',options:['读书','音乐','运动']}],
+                   buttons:['确定']},
+        progress: {title:'进度', width:450, height:150,
+                   controls:[{type:'progress',label:'进度',id:'prog',value:45}],
+                   buttons:['关闭']}
+    };
+    if (presets[type]) $('dialogConfig').value = JSON.stringify(presets[type], null, 2);
+}
+async function sendDialog() {
+    const cfg = $('dialogConfig').value.trim();
+    if (!cfg) return alert('请输入配置');
+    try { JSON.parse(cfg); } catch(e) { return alert('JSON格式错误'); }
+    const res = await callApi('POST', '/api/dialog', {config: cfg});
+    alert(res.code===0 ? '对话框已显示' : res.msg);
+}
+
+// ---------- 文件浏览器 ----------
+async function browse() {
+    const path = $('browsePath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/listdir?path=${encodeURIComponent(path)}`);
+    const container = $('fileList');
+    if (res.code !== 0) {
+        container.innerHTML = `<p style="color:red;">加载失败: ${res.msg}</p>`;
+        return;
+    }
+    let html = '<table class="file-table"><thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead><tbody>';
+    res.data.forEach(item => {
+        const sep = path.endsWith('\\') ? '' : '\\';
+        const full = path + sep + item.name;
+        const esc = full.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += `<tr>
+            <td class="${item.is_dir ? 'dir' : 'file'}"
+                onclick="${item.is_dir ? `browseTo('${esc}')` : `viewFile('${esc}')`}">${item.name}</td>
+            <td>${item.size_str || (item.is_dir ? '-' : item.size + 'B')}</td>
+            <td>${item.mtime || '-'}</td>
+            <td><button class="btn btn-sm" onclick="selectPath('${esc}')">选择</button></td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    $('fileContent').style.display = 'none';
+}
+function browseTo(p) { $('browsePath').value = p; browse(); }
+function selectPath(p) { selectedPath = p; alert('已选中: ' + p); }
+async function viewFile(p) {
+    const res = await callApi('GET', `/api/readfile?path=${encodeURIComponent(p)}`);
+    if (res.code === 0) {
+        $('fileContentTitle').textContent = '文件内容 · ' + p;
+        $('fileContentText').textContent = res.data;
+        $('fileContent').style.display = 'block';
+    } else {
+        alert('读取失败: ' + res.msg);
+    }
+}
+async function mkdir() {
+    const name = prompt('请输入新文件夹名称:');
+    if (!name) return;
+    const sep = $('browsePath').value.endsWith('\\') ? '' : '\\';
+    const path = $('browsePath').value.trim() + sep + name;
+    const res = await callApi('POST', '/api/mkdir', {path});
+    alert(res.code===0 ? '创建成功' : res.msg);
+    if (res.code===0) browse();
+}
+async function renameSelected() {
+    if (!selectedPath) return alert('请先选择文件');
+    const new_name = prompt('输入新名称:', selectedPath.split('\\').pop());
+    if (!new_name) return;
+    const res = await callApi('POST', '/api/rename', {path: selectedPath, new_name});
+    alert(res.code===0 ? '重命名成功' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function delSelected() {
+    if (!selectedPath) return alert('请先选择');
+    if (!confirm(`确认删除 ${selectedPath} ？`)) return;
+    const rec = confirm('是否递归删除？');
+    const res = await callApi('POST', '/api/delete', {path: selectedPath, recursive: rec});
+    alert(res.code===0 ? '删除成功' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function recycleSelected() {
+    if (!selectedPath) return alert('请先选择');
+    if (!confirm(`确认将 ${selectedPath} 移至回收站？`)) return;
+    const res = await callApi('POST', '/api/win/recycle', {path: selectedPath});
+    alert(res.code===0 ? '已移入回收站' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function revealSelected() {
+    if (!selectedPath) return alert('请先选择');
+    const res = await callApi('POST', '/api/win/reveal', {path: selectedPath});
+    alert(res.code===0 ? '已在资源管理器打开' : res.msg);
+}
+async function infoSelected() {
+    if (!selectedPath) return alert('请先选择');
+    const res = await callApi('GET', `/api/fileinfo?path=${encodeURIComponent(selectedPath)}`);
+    showResult('fileContent') ; // 复用显示
+    $('fileContentTitle').textContent = '文件属性';
+    $('fileContentText').textContent = JSON.stringify(res, null, 2);
+    $('fileContent').style.display = 'block';
+}
+
+// ---------- 写入 / 替换 / 信息 ----------
+async function execWrite() {
+    const path = $('writePath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('POST', '/api/writefile', {
+        path,
+        content: $('writeContent').value,
+        encoding: $('writeEncoding').value,
+        append: $('writeAppend').checked
+    });
+    showResult('writeResult', res);
+}
+async function execReplace() {
+    const path = $('replacePath').value.trim();
+    const find = $('replaceFind').value;
+    if (!path || !find) return alert('请输入路径和查找内容');
+    const res = await callApi('POST', '/api/replace', {
+        path, find,
+        replace: $('replaceWith').value,
+        regex: $('replaceRegex').checked,
+        count: parseInt($('replaceCount').value) || 0
+    });
+    showResult('replaceResult', res);
+}
+async function execFileInfo() {
+    const path = $('infoPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/fileinfo?path=${encodeURIComponent(path)}`);
+    showResult('infoResult', res);
+}
+async function execDirSize() {
+    const path = $('infoPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/dirsize?path=${encodeURIComponent(path)}`);
+    showResult('infoResult', res);
+}
+
+// ---------- Windows 属性 / 通知 ----------
+async function execSetAttr() {
+    const path = $('attrPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('POST', '/api/win/attr', {
+        path,
+        hidden: $('attrHidden').checked,
+        readonly: $('attrReadonly').checked,
+        system: $('attrSystem').checked,
+        archive: $('attrArchive').checked
+    });
+    showResult('attrResult', res);
+}
+async function execNotify() {
+    const res = await callApi('POST', '/api/win/notify', {
+        title: $('notifyTitle').value.trim() || 'BJS',
+        message: $('notifyMsg').value.trim() || ''
+    });
+    alert(res.code===0 ? '已发送通知' : res.msg);
+}
+
+// ---------- 高级 ----------
+async function execRename() {
+    const res = await callApi('POST', '/api/advanced/batch-rename', {
+        path: $('renamePath').value.trim(),
+        pattern: $('renamePattern').value,
+        replacement: $('renameRepl').value,
+        preview: $('renamePreview').checked
+    });
+    showResult('renameResult', res);
+}
+async function execSync() {
+    const exclude = $('syncExclude').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const res = await callApi('POST', '/api/advanced/sync', {
+        src: $('syncSrc').value.trim(),
+        dest: $('syncDest').value.trim(),
+        mode: $('syncMode').value,
+        exclude
+    });
+    showResult('syncResult', res);
+}
+async function execSchedule() {
+    const res = await callApi('POST', '/api/advanced/schedule', {
+        name: $('scheduleName').value.trim(),
+        trigger: 'cron',
+        expression: $('scheduleExpr').value.trim(),
+        action: $('scheduleAction').value.trim(),
+        params: {}
+    });
+    alert(res.code===0 ? '任务已添加' : res.msg);
+}
+async function fetchClipHistory() {
+    const limit = parseInt($('clipLimit').value) || 10;
+    const res = await callApi('GET', `/api/advanced/clipboard/history?limit=${limit}`);
+    showResult('clipResult', res);
+}
+async function restoreClip() {
+    const idx = prompt('要恢复的索引 (0开始):');
+    if (idx === null) return;
+    const res = await callApi('POST', '/api/advanced/clipboard/restore', {index: parseInt(idx)});
+    if (res.code === 0) {
+        alert('已恢复内容：\n' + JSON.stringify(res.data, null, 2));
+    } else alert(res.msg);
+}
+async function execWatch() {
+    const res = await callApi('POST', '/api/advanced/watch', {
+        path: $('watchPath').value.trim(),
+        events: ['create', 'modify'],
+        filter: $('watchFilter').value.trim() || '*',
+        action: $('watchAction').value,
+        target: $('watchTarget').value.trim()
+    });
+    alert(res.code===0 ? '监听已设置' : res.msg);
+}
+async function execSearch() {
+    const res = await callApi('POST', '/api/advanced/search', {
+        path: $('searchPath').value.trim(),
+        keyword: $('searchKeyword').value.trim(),
+        filetype: $('searchType').value.trim()
+    });
+    showResult('searchResult', res);
+}
+async function fetchVersions() {
+    const path = $('versionPath').value.trim();
+    if (!path) return alert('请输入文件路径');
+    const res = await callApi('GET', `/api/advanced/versions?path=${encodeURIComponent(path)}`);
+    showResult('versionResult', res);
+}
+async function execDup() {
+    const res = await callApi('POST', '/api/advanced/duplicates', {
+        path: $('dupPath').value.trim(),
+        algorithm: 'md5',
+        min_size: parseInt($('dupMinSize').value) || 1024
+    });
+    showResult('dupResult', res);
+}
+async function execExtract() {
+    const res = await callApi('POST', '/api/advanced/archive/extract', {
+        archive: $('archiveFile').value.trim(),
+        target: $('archiveTarget').value.trim()
+    });
+    alert(res.code===0 ? '解压成功' : res.msg);
+}
+async function execCreate() {
+    const sources = $('createSources').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const res = await callApi('POST', '/api/advanced/archive/create', {
+        sources, target: $('createTarget').value.trim(), format: 'zip'
+    });
+    alert(res.code===0 ? '压缩成功' : res.msg);
+}
+async function execShare() {
+    const res = await callApi('POST', '/api/advanced/share', {
+        path: $('sharePath').value.trim(),
+        expires_in: parseInt($('shareExpire').value) || 3600,
+        readonly: $('shareReadonly').checked,
+        password: $('sharePassword').value,
+        upload: $('shareUpload').checked,
+        note: $('shareNote').value
+    });
+    showResult('shareResult', res);
+}
+async function listShares() {
+    const res = await callApi('GET', '/api/advanced/share/list');
+    showResult('shareListResult', res);
+}
+async function execRemote() {
+    const res = await callApi('POST', '/api/advanced/remote/token', {
+        expires_in: parseInt($('remoteExpire').value) || 300,
+        permissions: ['read','download']
+    });
+    showResult('remoteResult', res);
+}
+async function execDevice() {
+    const res = await callApi('POST', '/api/advanced/sync/device', {
+        device_id: $('deviceId').value.trim(),
+        sync_path: $('deviceSyncPath').value.trim(),
+        auto_sync: $('deviceAuto').checked
+    });
+    alert(res.code===0 ? '设备配置成功' : res.msg);
+}
+async function execPluginInstall() {
+    const res = await callApi('POST', '/api/advanced/plugin/install', {
+        source: $('pluginSource').value.trim(),
+        name: $('pluginName').value.trim()
+    });
+    alert(res.code===0 ? '安装成功' : res.msg);
+}
+async function execPluginExec() {
+    const res = await callApi('POST', '/api/advanced/plugin/exec', {
+        plugin: $('pluginExecName').value.trim(),
+        action: $('pluginAction').value.trim()
+    });
+    alert(res.code===0 ? '执行成功' : res.msg);
+}
+async function execScript() {
+    const res = await callApi('POST', '/api/advanced/script/exec', {
+        script: $('scriptContent').value,
+        timeout: parseInt($('scriptTimeout').value) || 10
+    });
+    showResult('scriptResult', res);
+}
+
+// ---------- 日志 ----------
+async function fetchLog() {
+    const lines = $('logLines').value;
+    const res = await callApi('GET', `/api/log?lines=${lines}`);
+    $('logDisplay').textContent = res.code === 0 ? res.data : '加载失败';
+}
+
+// ---------- 初始化 ----------
+async function init() {
+    await checkHealth();
+    await refreshLicense();
+    fetchLog();
+    setInterval(() => { checkHealth(); refreshLicense(); }, 30000);
+}
+init();
 </script>
 </body>
 </html>
