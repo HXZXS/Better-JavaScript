@@ -25,7 +25,6 @@ function Test-Admin {
 
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $newProcess = Start-Process powershell -Verb RunAs -ArgumentList "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -PassThru
-    Start-Sleep -Milliseconds 100
     Stop-Process -Id $PID -Force
     exit
 }
