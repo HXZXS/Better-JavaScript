@@ -73,7 +73,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; i
 两条命令最终执行的都是同一个 `PS-Setup.ps1`，脚本内部的提权逻辑会在非管理员环境下自动请求 UAC，因此 GitHub 原版从 Windows+R 启动也能正常完成安装。
 ### 或
 
-从[Releases](https://github.com/HXZXS/Better-JavaScript/releases) 下载最新的安装程序。
+前往[Releases](https://github.com/HXZXS/Better-JavaScript/releases) 下载最新的安装程序。
 
 ### 权限
 
