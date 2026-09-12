@@ -6,12 +6,10 @@ $ExeName     = 'Better JavaScript DataRelay.exe'
 $LaunchAfterInstall = $true
 
 $DownloadUrls = @(
-    # 置顶：安全评估较好，速度较快
-    'https://ghfile.geekertao.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
-    'https://github.tbap.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
-    # 以下按安全性从高到低保留原有代理
     'https://tvv.tw/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://ghf.无名氏.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
+        'https://github.tbap.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
+    'https://ghfile.geekertao.top/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh.927223.xyz/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
     'https://gh-proxy.com/https://github.com/HXZXS/Better-JavaScript/releases/download/releases/AUTO-Setup.exe'
 )
