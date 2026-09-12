@@ -296,4 +296,4 @@ Write-Host ''
 Show-Banner -Title 'All done!' -Subtitle 'Installation completed  /  安装全部完成'
 Write-Host ''
 
-Read-Host 'Press Enter to exit / 按回车退出'
+Read-Host 'OK'
