@@ -22,12 +22,12 @@ function Test-Admin {
     return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-if (-not (Test-Admin)) {
-    Write-Host 'Requesting administrator privileges... / 正在请求管理员权限...' -ForegroundColor Yellow
-    $argList = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    Start-Process powershell -Verb RunAs -ArgumentList $argList
-    Start-Sleep -Milliseconds 600
-    [Environment]::Exit(0)
+
+if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $newProcess = Start-Process powershell -Verb RunAs -ArgumentList "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -PassThru
+    Start-Sleep -Milliseconds 500
+    Stop-Process -Id $PID -Force
+    exit
 }
 
 $Host.UI.RawUI.WindowTitle = "$AppName Automatic Installer"
