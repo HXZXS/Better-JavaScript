@@ -360,7 +360,7 @@ POST /api/lanzou/download
 | save_path | string | 否 | 保存路径，不填进 downloads/ |
 
 > [!IMPORTANT]
-> 解析服务来自暂时无法使用
+> 解析服务来自第三方，暂时无法使用
 
 ---
 
