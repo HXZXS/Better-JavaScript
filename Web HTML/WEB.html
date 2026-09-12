@@ -1,231 +1,104 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BJS 数据接力 · 控制台</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: #f0f4f8;
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            color: #1a3a5c;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(8px);
-            border-radius: 28px;
-            padding: 25px 30px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-        }
-        h1 {
-            font-size: 28px;
-            border-bottom: 3px solid #2b6f9e;
-            padding-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        h1 small { font-size: 16px; font-weight: 400; color: #6a8aa8; }
-        .sub {
-            color: #4a6a8a;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #2b6f9e;
-            padding-left: 12px;
-        }
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 18px;
-            border: 1px solid #e2eaf2;
-        }
-        .card h3 {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 17px;
-            margin-bottom: 10px;
-        }
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .row label {
-            min-width: 70px;
-            font-weight: 500;
-            color: #4a6a8a;
-        }
-        .row input, .row select, .row textarea {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #d8e2ed;
-            border-radius: 8px;
-            background: #fafcff;
-            font-size: 14px;
-            outline: none;
-        }
-        .row input:focus, .row select:focus, .row textarea:focus {
-            border-color: #2b6f9e;
-            box-shadow: 0 0 0 3px rgba(43,111,158,0.15);
-        }
-        .btn {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            background: #e8edf4;
-            color: #1a3a5c;
-        }
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        .btn-primary { background: #2b6f9e; color: #fff; }
-        .btn-primary:hover:not(:disabled) { background: #1f5a83; }
-        .btn-success { background: #1f8b4c; color: #fff; }
-        .btn-success:hover:not(:disabled) { background: #16733e; }
-        .btn-warning { background: #d48c2c; color: #fff; }
-        .btn-warning:hover:not(:disabled) { background: #b87720; }
-        .btn-purple { background: #8e44ad; color: #fff; }
-        .btn-purple:hover:not(:disabled) { background: #7d3c98; }
-        .btn-danger { background: #c0392b; color: #fff; }
-        .btn-danger:hover:not(:disabled) { background: #a93226; }
-        .btn-sm { padding: 4px 12px; font-size: 12px; }
-        .preset-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 4px;
-        }
-        .preset-btn {
-            background: #eef3f8;
-            border: 1px solid #d8e2ed;
-            border-radius: 20px;
-            padding: 2px 14px;
-            font-size: 12px;
-            cursor: pointer;
-            color: #1f3b58;
-        }
-        .preset-btn:hover { background: #d8e2ed; }
-        .result-box {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border-left: 4px solid #2b6f9e;
-            font-family: Consolas, monospace;
-            font-size: 13px;
-            max-height: 150px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .log-viewer {
-            background: #1a2a3e;
-            color: #e8edf4;
-            padding: 12px;
-            border-radius: 8px;
-            max-height: 250px;
-            overflow-y: auto;
-            font-family: Consolas, monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-        }
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            padding: 8px 16px;
-            border-radius: 10px;
-            border: 1px solid #e2eaf2;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-        }
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .online { background: #1f8b4c; }
-        .offline { background: #c0392b; }
-        .license-badge {
-            padding: 2px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            background: #e8edf4;
-        }
-        .license-badge.valid { background: #d4edda; color: #155724; }
-        .license-badge.invalid { background: #f8d7da; color: #721c24; }
-        .file-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        .file-table th {
-            text-align: left;
-            padding: 6px 12px;
-            border-bottom: 2px solid #d8e2ed;
-            color: #6a8aa8;
-        }
-        .file-table td { padding: 5px 12px; border-bottom: 1px solid #e2eaf2; }
-        .file-table .dir { cursor: pointer; color: #2b6f9e; font-weight: 600; }
-        .file-table .file { cursor: pointer; color: #2b6f9e; }
-        .file-table .file:hover, .file-table .dir:hover { text-decoration: underline; }
-        .advanced-section {
-            border-top: 2px dashed #cbd7e6;
-            margin-top: 10px;
-            padding-top: 10px;
-        }
-        .advanced-section h2 {
-            font-size: 20px;
-            color: #2b6f9e;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .license-input-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin: 10px 0;
-        }
-        .license-input-row input { flex: 1; min-width: 200px; }
-        @media (max-width: 700px) {
-            .container { padding: 16px; }
-            .row { flex-direction: column; align-items: stretch; }
-            .row label { min-width: auto; }
-            .license-input-row { flex-direction: column; align-items: stretch; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJS 数据接力 · 控制台</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f0f4f8; font-family: "Microsoft YaHei", Arial, sans-serif;
+       color: #1a3a5c; padding: 20px; }
+.container { max-width: 1180px; margin: 0 auto; background: rgba(255,255,255,0.92);
+             backdrop-filter: blur(8px); border-radius: 28px; padding: 25px 30px;
+             box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+h1 { font-size: 28px; border-bottom: 3px solid #2b6f9e; padding-bottom: 8px;
+     display: flex; justify-content: space-between; align-items: center; }
+h1 small { font-size: 16px; font-weight: 400; color: #6a8aa8; }
+.sub { color: #4a6a8a; margin-bottom: 20px; font-size: 14px;
+       border-left: 4px solid #2b6f9e; padding-left: 12px; }
+.card { background: #fff; border-radius: 16px; padding: 16px 20px;
+        margin-bottom: 18px; border: 1px solid #e2eaf2; }
+.card h3 { display: flex; gap: 8px; align-items: center; font-size: 17px;
+           margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.row label { min-width: 70px; font-weight: 500; color: #4a6a8a; font-size: 14px; }
+.row input, .row select, .row textarea { flex: 1; padding: 8px 12px;
+    border: 1px solid #d8e2ed; border-radius: 8px; background: #fafcff;
+    font-size: 14px; outline: none; font-family: inherit; }
+.row input:focus, .row select:focus, .row textarea:focus {
+    border-color: #2b6f9e; box-shadow: 0 0 0 3px rgba(43,111,158,0.15); }
+.btn { padding: 8px 20px; border: none; border-radius: 10px; font-weight: 600;
+       cursor: pointer; transition: 0.2s; background: #e8edf4; color: #1a3a5c; }
+.btn:hover:not(:disabled) { transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed;
+    transform: none !important; box-shadow: none !important; }
+.btn-primary { background: #2b6f9e; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1f5a83; }
+.btn-success { background: #1f8b4c; color: #fff; }
+.btn-success:hover:not(:disabled) { background: #16733e; }
+.btn-warning { background: #d48c2c; color: #fff; }
+.btn-warning:hover:not(:disabled) { background: #b87720; }
+.btn-purple { background: #8e44ad; color: #fff; }
+.btn-purple:hover:not(:disabled) { background: #7d3c98; }
+.btn-danger { background: #c0392b; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #a93226; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.preset-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.preset-btn { background: #eef3f8; border: 1px solid #d8e2ed; border-radius: 20px;
+              padding: 2px 14px; font-size: 12px; cursor: pointer; color: #1f3b58; }
+.preset-btn:hover { background: #d8e2ed; }
+.result-box { margin-top: 10px; padding: 10px; background: #f8fafc;
+              border-radius: 8px; border-left: 4px solid #2b6f9e;
+              font-family: Consolas, monospace; font-size: 13px;
+              max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+.log-viewer { background: #1a2a3e; color: #e8edf4; padding: 12px;
+              border-radius: 8px; max-height: 250px; overflow-y: auto;
+              font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+.status-bar { display: flex; justify-content: space-between; background: #f8fafc;
+              padding: 8px 16px; border-radius: 10px; border: 1px solid #e2eaf2;
+              margin-bottom: 20px; flex-wrap: wrap; align-items: center; gap: 10px; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.online { background: #1f8b4c; }
+.offline { background: #c0392b; }
+.license-badge { padding: 2px 12px; border-radius: 20px; font-size: 13px;
+                 font-weight: 600; background: #e8edf4; }
+.license-badge.valid { background: #d4edda; color: #155724; }
+.license-badge.invalid { background: #f8d7da; color: #721c24; }
+.file-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.file-table th { text-align: left; padding: 6px 12px;
+                 border-bottom: 2px solid #d8e2ed; color: #6a8aa8; }
+.file-table td { padding: 5px 12px; border-bottom: 1px solid #e2eaf2; }
+.file-table .dir { cursor: pointer; color: #2b6f9e; font-weight: 600; }
+.file-table .file { cursor: pointer; color: #2b6f9e; }
+.file-table .file:hover, .file-table .dir:hover { text-decoration: underline; }
+.advanced-section { border-top: 2px dashed #cbd7e6; margin-top: 10px; padding-top: 10px; }
+.advanced-section h2 { font-size: 20px; color: #2b6f9e;
+                       display: flex; align-items: center; gap: 10px; }
+.win-section { border-top: 2px dashed #f5c6a0; margin-top: 10px; padding-top: 10px; }
+.win-section h2 { font-size: 20px; color: #c47a1a;
+                  display: flex; align-items: center; gap: 10px; }
+.license-input-row { display: flex; gap: 8px; align-items: center;
+                     flex-wrap: wrap; margin: 10px 0; }
+.license-input-row input { flex: 1; min-width: 200px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 700px) {
+    .container { padding: 16px; }
+    .row { flex-direction: column; align-items: stretch; }
+    .row label { min-width: auto; }
+    .license-input-row { flex-direction: column; align-items: stretch; }
+    .two-col { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
 <div class="container">
-    <h1>🔗 BJS 数据接力 <small>v6.0.β</small></h1>
-    <div class="sub">HXZXS</div>
+    <h1>🔗 BJS 数据接力 <small>v6.0.4</small></h1>
+    <div class="sub">HXZXS · Windows 优先</div>
+
     <div class="status-bar">
-        <div>
-            <span class="status-dot" id="statusDot"></span> <span id="statusText">检测中...</span>
-        </div>
+        <div><span class="status-dot" id="statusDot"></span>
+            <span id="statusText">检测中...</span></div>
         <div>
             <span class="license-badge invalid" id="licenseBadge">⚪ 标准版</span>
             <button class="btn btn-sm btn-primary" onclick="checkHealth()">🔄 刷新</button>
@@ -233,7 +106,7 @@
         </div>
     </div>
 
-    <!-- 卡密升级 -->
+    <!-- 卡密 -->
     <div class="card" style="border:2px solid #2b6f9e; background:#f0f7fe;">
         <h3>🔑 升级至高级版</h3>
         <div class="license-input-row">
@@ -241,10 +114,10 @@
             <button class="btn btn-success" onclick="verifyLicense()">验证卡密</button>
             <span id="licenseMsg" style="font-size:14px; color:#666;"></span>
         </div>
-        <div style="font-size:13px; color:#6a8aa8;">标准版功能免费，高级功能需卡密激活。开发版卡密请前往开发者文档获取。</div>
+        <div style="font-size:13px; color:#6a8aa8;">标准版功能免费，高级功能需卡密激活。</div>
     </div>
 
-    <!-- ===== 基础功能 ===== -->
+    <!-- ====== 基础功能 ====== -->
     <div class="card">
         <h3>📂 打开路径</h3>
         <div class="row">
@@ -255,6 +128,7 @@
         <div class="preset-group">
             <button class="preset-btn" onclick="setPath('C:\\Users\\Public')">用户公共</button>
             <button class="preset-btn" onclick="setPath('C:\\Windows')">Windows</button>
+            <button class="preset-btn" onclick="setPath('C:\\Program Files')">Program Files</button>
         </div>
     </div>
 
@@ -323,6 +197,7 @@
         <div class="preset-group">
             <button class="preset-btn" onclick="setRun('notepad.exe','')">记事本</button>
             <button class="preset-btn" onclick="setRun('calc.exe','')">计算器</button>
+            <button class="preset-btn" onclick="setRun('mspaint.exe','')">画图</button>
         </div>
     </div>
 
@@ -344,14 +219,15 @@
         </div>
         <div class="row">
             <button class="btn btn-purple" onclick="sendDialog()">发送对话框</button>
-            <div class="preset-group">
-                <button class="preset-btn" onclick="loadDialogPreset('input')">输入框</button>
-                <button class="preset-btn" onclick="loadDialogPreset('checkbox')">多选</button>
-                <button class="preset-btn" onclick="loadDialogPreset('progress')">进度条</button>
-            </div>
+        </div>
+        <div class="preset-group">
+            <button class="preset-btn" onclick="loadDialogPreset('input')">输入框</button>
+            <button class="preset-btn" onclick="loadDialogPreset('checkbox')">多选</button>
+            <button class="preset-btn" onclick="loadDialogPreset('progress')">进度条</button>
         </div>
     </div>
 
+    <!-- ====== 文件操作 ====== -->
     <div class="card">
         <h3>📂 文件浏览器</h3>
         <div class="row">
@@ -360,39 +236,120 @@
         </div>
         <div id="fileList"><p style="color:#6a8aa8;">点击浏览加载</p></div>
         <div id="fileContent" style="display:none; margin-top:10px;">
-            <div style="display:flex; justify-content:space-between;">
-                <strong>文件内容</strong>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong id="fileContentTitle">文件内容</strong>
                 <button class="btn btn-sm" onclick="document.getElementById('fileContent').style.display='none'">关闭</button>
             </div>
             <div class="log-viewer" id="fileContentText"></div>
         </div>
         <div class="row" style="margin-top:8px;">
             <button class="btn btn-sm btn-success" onclick="mkdir()">新建文件夹</button>
-            <button class="btn btn-sm btn-danger" onclick="delSelected()">删除选中</button>
+            <button class="btn btn-sm btn-primary" onclick="renameSelected()">重命名</button>
+            <button class="btn btn-sm btn-danger" onclick="delSelected()">删除</button>
+            <button class="btn btn-sm btn-warning" onclick="recycleSelected()">移至回收站</button>
+            <button class="btn btn-sm" onclick="revealSelected()">在资源管理器显示</button>
+            <button class="btn btn-sm" onclick="infoSelected()">属性</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>☁️ 蓝奏云下载</h3>
+        <h3>✍️ 写入文件</h3>
         <div class="row">
-            <label>链接</label>
-            <input type="text" id="lanzouUrl" value="https://jiuhunwl.lanzouw.com/iMXv82vhrywj">
+            <label>路径</label>
+            <input type="text" id="writePath" value="C:\test\hello.txt">
         </div>
         <div class="row">
-            <label>密码</label>
-            <input type="text" id="lanzouPwd" value="h0fv">
+            <label>内容</label>
+            <textarea id="writeContent" rows="3">Hello BJS!</textarea>
         </div>
         <div class="row">
-            <button class="btn btn-success" onclick="downloadLanzou()">解析并下载</button>
+            <label>编码</label>
+            <select id="writeEncoding" style="flex:0.4;">
+                <option value="utf-8">UTF-8</option>
+                <option value="gbk">GBK</option>
+                <option value="utf-8-sig">UTF-8 BOM</option>
+            </select>
+            <label><input type="checkbox" id="writeAppend"> 追加模式</label>
+            <button class="btn btn-primary" onclick="execWrite()">写入</button>
+        </div>
+        <div id="writeResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h3>🔎 文本替换</h3>
+        <div class="row">
+            <label>文件路径</label>
+            <input type="text" id="replacePath" value="C:\test\config.ini">
+        </div>
+        <div class="row">
+            <label>查找</label>
+            <input type="text" id="replaceFind" value="old_value">
+        </div>
+        <div class="row">
+            <label>替换为</label>
+            <input type="text" id="replaceWith" value="new_value">
+        </div>
+        <div class="row">
+            <label><input type="checkbox" id="replaceRegex"> 使用正则</label>
+            <label>次数</label>
+            <input type="number" id="replaceCount" value="0" style="flex:0.3;" placeholder="0=全部">
+            <button class="btn btn-primary" onclick="execReplace()">替换</button>
+        </div>
+        <div id="replaceResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h3>📊 文件/目录信息</h3>
+        <div class="row">
+            <label>路径</label>
+            <input type="text" id="infoPath" value="C:\test">
+            <button class="btn btn-primary" onclick="execFileInfo()">详细信息</button>
+            <button class="btn btn-success" onclick="execDirSize()">目录大小</button>
+        </div>
+        <div id="infoResult" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- ====== Windows 优化 ====== -->
+    <div class="win-section">
+        <h2>🪟 Windows 专属功能</h2>
+
+        <div class="card" style="margin-top:10px;">
+            <h3>🔖 文件属性（隐藏/只读/系统/归档）</h3>
+            <div class="row">
+                <label>路径</label>
+                <input type="text" id="attrPath" value="C:\test\secret.txt">
+            </div>
+            <div class="row">
+                <label><input type="checkbox" id="attrHidden"> 隐藏</label>
+                <label><input type="checkbox" id="attrReadonly"> 只读</label>
+                <label><input type="checkbox" id="attrSystem"> 系统</label>
+                <label><input type="checkbox" id="attrArchive"> 归档</label>
+                <button class="btn btn-warning" onclick="execSetAttr()">应用</button>
+            </div>
+            <div id="attrResult" class="result-box" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h3>🔔 系统通知</h3>
+            <div class="row">
+                <label>标题</label>
+                <input type="text" id="notifyTitle" value="BJS 数据接力">
+            </div>
+            <div class="row">
+                <label>内容</label>
+                <input type="text" id="notifyMsg" value="任务已完成">
+            </div>
+            <div class="row">
+                <button class="btn btn-primary" onclick="execNotify()">发送通知</button>
+            </div>
         </div>
     </div>
 
-    <!-- ===== 高级功能 ===== -->
+    <!-- ====== 高级功能 ====== -->
     <div class="advanced-section">
         <h2>⭐ 高级功能 <span id="advStatus" style="font-size:14px; color:#6a8aa8;">(标准版)</span></h2>
         <div style="margin-top:10px;">
 
-            <!-- 批量重命名 -->
             <div class="card">
                 <h3>📝 批量重命名</h3>
                 <div class="row">
@@ -412,7 +369,6 @@
                 <div id="renameResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 目录同步 -->
             <div class="card">
                 <h3>🔄 目录同步</h3>
                 <div class="row">
@@ -429,13 +385,12 @@
                         <option value="update">更新</option>
                     </select>
                     <label>排除</label>
-                    <input type="text" id="syncExclude" value=".tmp,*.log" placeholder="后缀,逗号分隔">
+                    <input type="text" id="syncExclude" value=".tmp,.log">
                     <button class="btn btn-primary" id="btnSync" disabled onclick="execSync()">同步</button>
                 </div>
                 <div id="syncResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 定时任务 -->
             <div class="card">
                 <h3>⏰ 定时任务</h3>
                 <div class="row">
@@ -451,7 +406,6 @@
                 </div>
             </div>
 
-            <!-- 剪贴板历史 -->
             <div class="card">
                 <h3>📋 剪贴板历史</h3>
                 <div class="row">
@@ -463,23 +417,26 @@
                 <div id="clipResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 文件监听 -->
             <div class="card">
                 <h3>👁️ 文件监听</h3>
                 <div class="row">
                     <label>目录</label>
                     <input type="text" id="watchPath" value="C:\incoming">
-                    <label>操作</label>
-                    <input type="text" id="watchAction" value="move">
+                    <label>动作</label>
+                    <select id="watchAction" style="flex:0.4;">
+                        <option value="move">移动</option>
+                        <option value="copy">复制</option>
+                    </select>
                 </div>
                 <div class="row">
                     <label>目标</label>
                     <input type="text" id="watchTarget" value="C:\archive">
+                    <label>过滤</label>
+                    <input type="text" id="watchFilter" value="*" style="flex:0.4;">
                     <button class="btn btn-primary" id="btnWatch" disabled onclick="execWatch()">开始监听</button>
                 </div>
             </div>
 
-            <!-- 全文搜索 -->
             <div class="card">
                 <h3>🔍 全文搜索</h3>
                 <div class="row">
@@ -490,24 +447,22 @@
                 </div>
                 <div class="row">
                     <label>类型</label>
-                    <input type="text" id="searchType" value="docx,pdf" placeholder="后缀,逗号分隔">
+                    <input type="text" id="searchType" value="docx,pdf">
                     <button class="btn btn-primary" id="btnSearch" disabled onclick="execSearch()">搜索</button>
                 </div>
                 <div id="searchResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 版本历史 -->
             <div class="card">
                 <h3>📜 版本历史</h3>
                 <div class="row">
-                    <label>文件路径</label>
+                    <label>文件</label>
                     <input type="text" id="versionPath" value="C:\work\report.docx">
                     <button class="btn btn-primary" id="btnVersions" disabled onclick="fetchVersions()">查看版本</button>
                 </div>
                 <div id="versionResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 重复文件查找 -->
             <div class="card">
                 <h3>🔁 重复文件查找</h3>
                 <div class="row">
@@ -522,7 +477,6 @@
                 <div id="dupResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 压缩包管理 -->
             <div class="card">
                 <h3>📦 压缩包管理</h3>
                 <div class="row">
@@ -536,14 +490,13 @@
                     <button class="btn btn-success" id="btnCreate" disabled onclick="execCreate()">创建压缩包</button>
                 </div>
                 <div class="row" style="margin-top:4px;">
-                    <label>压缩源(逗号分隔)</label>
+                    <label>源(逗号分隔)</label>
                     <input type="text" id="createSources" value="C:\docs,C:\photos">
                     <label>输出</label>
                     <input type="text" id="createTarget" value="C:\backup.zip">
                 </div>
             </div>
 
-            <!-- 局域网分享 -->
             <div class="card">
                 <h3>🌐 局域网分享</h3>
                 <div class="row">
@@ -553,12 +506,21 @@
                     <input type="number" id="shareExpire" value="3600" style="flex:0.3;">
                 </div>
                 <div class="row">
-                    <button class="btn btn-primary" id="btnShare" disabled onclick="execShare()">生成分享链接</button>
+                    <label>访问密码</label>
+                    <input type="text" id="sharePassword" placeholder="留空表示无密码">
+                    <label><input type="checkbox" id="shareUpload"> 允许上传</label>
+                    <label><input type="checkbox" id="shareReadonly" checked> 只读</label>
+                </div>
+                <div class="row">
+                    <label>备注</label>
+                    <input type="text" id="shareNote" placeholder="可选">
+                    <button class="btn btn-primary" id="btnShare" disabled onclick="execShare()">生成链接</button>
+                    <button class="btn btn-success" id="btnShareList" disabled onclick="listShares()">会话列表</button>
                 </div>
                 <div id="shareResult" class="result-box" style="display:none;"></div>
+                <div id="shareListResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 远程协助 -->
             <div class="card">
                 <h3>🆘 远程协助</h3>
                 <div class="row">
@@ -569,7 +531,6 @@
                 <div id="remoteResult" class="result-box" style="display:none;"></div>
             </div>
 
-            <!-- 多设备同步 -->
             <div class="card">
                 <h3>📱 多设备同步</h3>
                 <div class="row">
@@ -584,12 +545,11 @@
                 </div>
             </div>
 
-            <!-- 插件管理 -->
             <div class="card">
                 <h3>🔌 插件管理</h3>
                 <div class="row">
                     <label>安装源</label>
-                    <input type="text" id="pluginSource" value="https://plugins.bjs.com/backup-tool.bjs">
+                    <input type="text" id="pluginSource" placeholder="URL 或本地路径">
                     <label>名称</label>
                     <input type="text" id="pluginName" value="backup-tool">
                 </div>
@@ -605,7 +565,6 @@
                 </div>
             </div>
 
-            <!-- 自定义脚本 -->
             <div class="card">
                 <h3>🧾 自定义脚本</h3>
                 <div class="row">
@@ -619,11 +578,9 @@
                 </div>
                 <div id="scriptResult" class="result-box" style="display:none;"></div>
             </div>
-
         </div>
     </div>
 
-    <!-- 日志 -->
     <div class="card">
         <h3>📜 运行日志</h3>
         <div class="row">
@@ -640,418 +597,472 @@
 </div>
 
 <script>
-    // ---------- 全局 ----------
-    const API_BASE = 'http://127.0.0.1:8765';
-    let selectedPath = '';
-    let licenseValid = false;
+const API_BASE = 'http://127.0.0.1:8765';
+let selectedPath = '';
+let licenseValid = false;
 
-    // 辅助函数
-    function $(id) { return document.getElementById(id); }
+function $(id) { return document.getElementById(id); }
 
-    // ---------- 健康检查 ----------
-    async function checkHealth() {
-        const dot = $('statusDot');
-        const txt = $('statusText');
-        try {
-            const resp = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
-            if (resp.ok) {
-                dot.className = 'status-dot online';
-                txt.textContent = '服务在线';
-                return true;
-            }
-        } catch (e) {}
-        dot.className = 'status-dot offline';
-        txt.textContent = '服务不可用';
-        return false;
-    }
-
-    // ---------- 授权状态 ----------
-    async function refreshLicense() {
-        try {
-            const resp = await fetch(API_BASE + '/api/license/status');
-            const data = await resp.json();
-            if (data.code === 0 && data.data) {
-                licenseValid = data.data.valid === true;
-                const badge = $('licenseBadge');
-                const advStatus = $('advStatus');
-                if (licenseValid) {
-                    badge.className = 'license-badge valid';
-                    badge.textContent = '✅ 高级版 (已激活)';
-                    advStatus.textContent = '(已授权)';
-                } else {
-                    badge.className = 'license-badge invalid';
-                    badge.textContent = '⚪ 标准版';
-                    advStatus.textContent = '(标准版)';
-                }
-                setAdvancedButtons(licenseValid);
-                return licenseValid;
-            }
-        } catch (e) {
-            console.warn('获取授权状态失败', e);
+// ---------- 健康检查 ----------
+async function checkHealth() {
+    const dot = $('statusDot'), txt = $('statusText');
+    try {
+        const resp = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
+        if (resp.ok) {
+            dot.className = 'status-dot online';
+            const j = await resp.json();
+            txt.textContent = '服务在线 ' + (j.version || '');
+            return true;
         }
-        licenseValid = false;
-        setAdvancedButtons(false);
-        return false;
-    }
+    } catch (e) {}
+    dot.className = 'status-dot offline';
+    txt.textContent = '服务不可用';
+    return false;
+}
 
-    function setAdvancedButtons(enabled) {
-        const ids = [
-            'btnRename', 'btnSync', 'btnSchedule', 'btnClipHistory', 'btnClipRestore',
-            'btnWatch', 'btnSearch', 'btnVersions', 'btnDup', 'btnExtract', 'btnCreate',
-            'btnShare', 'btnRemote', 'btnDevice', 'btnPluginInstall', 'btnPluginExec',
-            'btnScript'
-        ];
-        ids.forEach(id => {
-            const btn = $(id);
-            if (btn) btn.disabled = !enabled;
-        });
-    }
-
-    // ---------- 卡密验证 ----------
-    async function verifyLicense() {
-        const key = $('licenseKeyInput').value.trim();
-        if (!key) {
-            $('licenseMsg').textContent = '请输入卡密';
-            return;
-        }
-        $('licenseMsg').textContent = '验证中...';
-        try {
-            const resp = await fetch(API_BASE + '/api/license/verify', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({key})
-            });
-            const data = await resp.json();
-            if (data.code === 0) {
-                $('licenseMsg').textContent = '✅ 验证成功！高级功能已解锁';
-                await refreshLicense();
+// ---------- 授权 ----------
+async function refreshLicense() {
+    try {
+        const resp = await fetch(API_BASE + '/api/license/status');
+        const data = await resp.json();
+        if (data.code === 0 && data.data) {
+            licenseValid = data.data.valid === true;
+            const badge = $('licenseBadge');
+            const advStatus = $('advStatus');
+            if (licenseValid) {
+                badge.className = 'license-badge valid';
+                badge.textContent = '✅ 高级版 (已激活)';
+                advStatus.textContent = '(已授权)';
             } else {
-                $('licenseMsg').textContent = '❌ ' + (data.msg || '验证失败');
+                badge.className = 'license-badge invalid';
+                badge.textContent = '⚪ 标准版';
+                advStatus.textContent = '(标准版)';
             }
-        } catch (e) {
-            $('licenseMsg').textContent = '❌ 请求失败';
+            setAdvancedButtons(licenseValid);
+            return licenseValid;
         }
-    }
+    } catch (e) {}
+    licenseValid = false;
+    setAdvancedButtons(false);
+    return false;
+}
 
-    // ---------- 通用API调用 ----------
-    async function callApi(method, endpoint, data=null) {
-        try {
-            const opts = { method, headers: {'Content-Type':'application/json'} };
-            if (data) opts.body = JSON.stringify(data);
-            const resp = await fetch(API_BASE + endpoint, opts);
-            return await resp.json();
-        } catch (e) {
-            console.error(e);
-            return null;
-        }
-    }
+function setAdvancedButtons(enabled) {
+    ['btnRename','btnSync','btnSchedule','btnClipHistory','btnClipRestore',
+     'btnWatch','btnSearch','btnVersions','btnDup','btnExtract','btnCreate',
+     'btnShare','btnShareList','btnRemote','btnDevice','btnPluginInstall',
+     'btnPluginExec','btnScript'].forEach(id => {
+        const btn = $(id);
+        if (btn) btn.disabled = !enabled;
+    });
+}
 
-    // ---------- 基础功能 ----------
-    function setPath(v) { $('pathInput').value = v; }
-    async function sendOpen() {
-        const path = $('pathInput').value.trim();
-        if (!path) return alert('请输入路径');
-        const res = await callApi('GET', `/api/open?path=${encodeURIComponent(path)}`);
-        alert(res ? (res.code===0 ? '打开成功' : res.msg) : '请求失败');
-    }
-
-    function presetMsg(text, title, type) {
-        $('msgText').value = text;
-        $('msgTitle').value = title;
-        $('msgType').value = type;
-    }
-    async function sendMsg() {
-        const text = $('msgText').value.trim();
-        if (!text) return alert('请输入内容');
-        const title = $('msgTitle').value.trim() || '来自网页';
-        const type = $('msgType').value;
-        const res = await callApi('POST', '/api/msg', {text, title, type});
-        alert(res ? (res.code===0 ? '弹窗已显示' : res.msg) : '请求失败');
-    }
-
-    async function sendImage() {
-        const src = $('imgUrl').value.trim();
-        const caption = $('imgCaption').value.trim();
-        const w = parseInt($('imgWidth').value) || 0;
-        const h = parseInt($('imgHeight').value) || 0;
-        if (!src) return alert('请输入图片地址');
-        const res = await callApi('POST', '/api/msg', {
-            text: caption || '图片预览',
-            image: src,
-            width: w,
-            height: h,
-            title: '图片预览'
+async function verifyLicense() {
+    const key = $('licenseKeyInput').value.trim();
+    if (!key) { $('licenseMsg').textContent = '请输入卡密'; return; }
+    $('licenseMsg').textContent = '验证中...';
+    try {
+        const resp = await fetch(API_BASE + '/api/license/verify', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({key})
         });
-        alert(res ? (res.code===0 ? '图片已显示' : res.msg) : '请求失败');
-    }
-
-    function setRun(path, args) {
-        $('runPath').value = path;
-        $('runArgs').value = args || '';
-    }
-    async function sendRun() {
-        const path = $('runPath').value.trim();
-        if (!path) return alert('请输入程序路径');
-        const args = $('runArgs').value.trim();
-        const wait = $('runWait').checked;
-        const res = await callApi('POST', '/api/run', {path, args, wait});
-        alert(res ? (res.code===0 ? '运行成功' : res.msg) : '请求失败');
-    }
-
-    function loadDialogPreset(type) {
-        const presets = {
-            input: {title:'输入框', width:400, height:200, controls:[{type:'entry',label:'姓名',id:'name'},{type:'entry',label:'年龄',id:'age'}], buttons:['确定']},
-            checkbox: {title:'选择', width:400, height:250, controls:[{type:'checkbox',label:'爱好',id:'hobby',options:['读书','音乐','运动']}], buttons:['确定']},
-            progress: {title:'进度', width:450, height:150, controls:[{type:'progress',label:'进度',id:'prog',value:45}], buttons:['关闭']}
-        };
-        const cfg = presets[type];
-        if (cfg) $('dialogConfig').value = JSON.stringify(cfg, null, 2);
-    }
-    async function sendDialog() {
-        let cfg = $('dialogConfig').value.trim();
-        if (!cfg) return alert('请输入配置');
-        try { JSON.parse(cfg); } catch(e) { alert('JSON格式错误'); return; }
-        const res = await callApi('POST', '/api/dialog', {config: cfg});
-        alert(res ? (res.code===0 ? '对话框已显示' : res.msg) : '请求失败');
-    }
-
-    // 文件浏览器
-    async function browse() {
-        const path = $('browsePath').value.trim();
-        if (!path) return alert('请输入路径');
-        const res = await callApi('GET', `/api/listdir?path=${encodeURIComponent(path)}`);
-        const container = $('fileList');
-        if (!res || res.code !== 0) {
-            container.innerHTML = `<p style="color:red;">加载失败: ${res ? res.msg : '网络错误'}</p>`;
-            return;
-        }
-        let html = '<table class="file-table"><thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead><tbody>';
-        res.data.forEach(item => {
-            const isDir = item.is_dir;
-            const name = item.name;
-            const size = isDir ? '-' : (item.size < 1024 ? item.size+'B' : (item.size<1048576 ? (item.size/1024).toFixed(1)+'KB' : (item.size/1048576).toFixed(1)+'MB'));
-            html += `<tr>
-                <td class="${isDir ? 'dir' : 'file'}" onclick="${isDir ? `browseTo('${path}\\${name}')` : `viewFile('${path}\\${name}')`}">${name}</td>
-                <td>${size}</td>
-                <td>${item.mtime || '-'}</td>
-                <td><button class="btn btn-sm" onclick="selectPath('${path}\\${name}')">选择</button></td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-        container.innerHTML = html;
-        $('fileContent').style.display = 'none';
-    }
-    function browseTo(p) {
-        $('browsePath').value = p;
-        browse();
-    }
-    function selectPath(p) {
-        selectedPath = p;
-        alert('已选中: ' + p);
-    }
-    async function viewFile(p) {
-        const res = await callApi('GET', `/api/readfile?path=${encodeURIComponent(p)}`);
-        if (res && res.code === 0) {
-            $('fileContentText').textContent = res.data;
-            $('fileContent').style.display = 'block';
+        const data = await resp.json();
+        if (data.code === 0) {
+            $('licenseMsg').textContent = '✅ 验证成功！';
+            await refreshLicense();
         } else {
-            alert('读取失败: ' + (res ? res.msg : '网络错误'));
+            $('licenseMsg').textContent = '❌ ' + (data.msg || '验证失败');
         }
+    } catch (e) {
+        $('licenseMsg').textContent = '❌ 请求失败';
     }
-    async function mkdir() {
-        const name = prompt('请输入新文件夹名称:');
-        if (!name) return;
-        const path = $('browsePath').value.trim() + '\\' + name;
-        const res = await callApi('POST', '/api/mkdir', {path});
-        alert(res ? (res.code===0 ? '创建成功' : res.msg) : '请求失败');
-        if (res && res.code===0) browse();
-    }
-    async function delSelected() {
-        if (!selectedPath) return alert('请先选择一个文件或文件夹（点击“选择”按钮）');
-        if (!confirm(`确认删除 ${selectedPath} ？`)) return;
-        const rec = confirm('是否递归删除？（文件夹内全部删除）');
-        const res = await callApi('POST', '/api/delete', {path: selectedPath, recursive: rec});
-        alert(res ? (res.code===0 ? '删除成功' : res.msg) : '请求失败');
-        if (res && res.code===0) browse();
-    }
+}
 
-    // 蓝奏云
-    async function downloadLanzou() {
-        const url = $('lanzouUrl').value.trim();
-        const pwd = $('lanzouPwd').value.trim();
-        if (!url) return alert('请输入链接');
-        const res = await callApi('POST', '/api/lanzou/download', {url, pwd});
-        alert(res ? (res.code===0 ? `下载成功：${res.data.filename}\n保存至 ${res.data.save_path}` : res.msg) : '请求失败');
+async function callApi(method, endpoint, data=null) {
+    try {
+        const opts = { method, headers: {'Content-Type':'application/json'} };
+        if (data) opts.body = JSON.stringify(data);
+        const resp = await fetch(API_BASE + endpoint, opts);
+        return await resp.json();
+    } catch (e) {
+        console.error(e);
+        return { code: -1, msg: String(e) };
     }
+}
 
-    // ---------- 高级功能 ----------
-    function showResult(elemId, data) {
-        const box = $(elemId);
-        box.style.display = 'block';
-        box.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-    }
+function showResult(id, data) {
+    const box = $(id);
+    if (!box) return;
+    box.style.display = 'block';
+    box.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
 
-    async function execRename() {
-        const path = $('renamePath').value.trim();
-        const pattern = $('renamePattern').value.trim();
-        const replacement = $('renameRepl').value.trim();
-        const preview = $('renamePreview').checked;
-        if (!path || !pattern) return alert('请输入目录和匹配模式');
-        const res = await callApi('POST', '/api/advanced/batch-rename', {path, pattern, replacement, preview});
-        showResult('renameResult', res);
-    }
+// ---------- 基础 ----------
+function setPath(v) { $('pathInput').value = v; }
+async function sendOpen() {
+    const path = $('pathInput').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/open?path=${encodeURIComponent(path)}`);
+    alert(res.code===0 ? '打开成功' : res.msg);
+}
 
-    async function execSync() {
-        const src = $('syncSrc').value.trim();
-        const dest = $('syncDest').value.trim();
-        const mode = $('syncMode').value;
-        const exclude = $('syncExclude').value.split(',').map(s=>s.trim()).filter(Boolean);
-        if (!src || !dest) return alert('请输入源和目标');
-        const res = await callApi('POST', '/api/advanced/sync', {src, dest, mode, exclude});
-        showResult('syncResult', res);
-    }
+function presetMsg(text, title, type) {
+    $('msgText').value = text; $('msgTitle').value = title; $('msgType').value = type;
+}
+async function sendMsg() {
+    const text = $('msgText').value.trim();
+    if (!text) return alert('请输入内容');
+    const res = await callApi('POST', '/api/msg', {
+        text, title: $('msgTitle').value.trim() || '来自网页', type: $('msgType').value
+    });
+    alert(res.code===0 ? '弹窗已显示' : res.msg);
+}
 
-    async function execSchedule() {
-        const name = $('scheduleName').value.trim();
-        const expr = $('scheduleExpr').value.trim();
-        const action = $('scheduleAction').value.trim();
-        if (!name || !expr) return alert('请输入名称和表达式');
-        const res = await callApi('POST', '/api/advanced/schedule', {name, trigger:'cron', expression:expr, action, params:{}});
-        alert(res ? (res.code===0 ? '任务已添加' : res.msg) : '请求失败');
-    }
+async function sendImage() {
+    const src = $('imgUrl').value.trim();
+    if (!src) return alert('请输入图片地址');
+    const res = await callApi('POST', '/api/msg', {
+        text: $('imgCaption').value.trim() || '图片预览',
+        image: src,
+        width: parseInt($('imgWidth').value) || 0,
+        height: parseInt($('imgHeight').value) || 0,
+        title: '图片预览'
+    });
+    alert(res.code===0 ? '图片已显示' : res.msg);
+}
 
-    async function fetchClipHistory() {
-        const limit = parseInt($('clipLimit').value) || 10;
-        const res = await callApi('GET', `/api/advanced/clipboard/history?limit=${limit}`);
-        showResult('clipResult', res);
-    }
+function setRun(path, args) { $('runPath').value = path; $('runArgs').value = args || ''; }
+async function sendRun() {
+    const path = $('runPath').value.trim();
+    if (!path) return alert('请输入程序路径');
+    const res = await callApi('POST', '/api/run', {
+        path, args: $('runArgs').value.trim(), wait: $('runWait').checked
+    });
+    alert(res.code===0 ? '运行成功' : res.msg);
+}
 
-    async function restoreClip() {
-        const idx = prompt('请输入要恢复的索引 (0开始)');
-        if (idx === null) return;
-        const res = await callApi('POST', '/api/advanced/clipboard/restore', {index: parseInt(idx)});
-        alert(res ? (res.code===0 ? `恢复内容：${res.data}` : res.msg) : '请求失败');
-    }
+function loadDialogPreset(type) {
+    const presets = {
+        input: {title:'输入框', width:400, height:200,
+                controls:[{type:'entry',label:'姓名',id:'name'},{type:'entry',label:'年龄',id:'age'}],
+                buttons:['确定']},
+        checkbox: {title:'选择', width:400, height:250,
+                   controls:[{type:'checkbox',label:'爱好',id:'hobby',options:['读书','音乐','运动']}],
+                   buttons:['确定']},
+        progress: {title:'进度', width:450, height:150,
+                   controls:[{type:'progress',label:'进度',id:'prog',value:45}],
+                   buttons:['关闭']}
+    };
+    if (presets[type]) $('dialogConfig').value = JSON.stringify(presets[type], null, 2);
+}
+async function sendDialog() {
+    const cfg = $('dialogConfig').value.trim();
+    if (!cfg) return alert('请输入配置');
+    try { JSON.parse(cfg); } catch(e) { return alert('JSON格式错误'); }
+    const res = await callApi('POST', '/api/dialog', {config: cfg});
+    alert(res.code===0 ? '对话框已显示' : res.msg);
+}
 
-    async function execWatch() {
-        const path = $('watchPath').value.trim();
-        const action = $('watchAction').value.trim();
-        const target = $('watchTarget').value.trim();
-        if (!path) return alert('请输入目录');
-        const res = await callApi('POST', '/api/advanced/watch', {path, events:['create'], filter:'*', action, target});
-        alert(res ? (res.code===0 ? '监听已设置' : res.msg) : '请求失败');
+// ---------- 文件浏览器 ----------
+async function browse() {
+    const path = $('browsePath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/listdir?path=${encodeURIComponent(path)}`);
+    const container = $('fileList');
+    if (res.code !== 0) {
+        container.innerHTML = `<p style="color:red;">加载失败: ${res.msg}</p>`;
+        return;
     }
+    let html = '<table class="file-table"><thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead><tbody>';
+    res.data.forEach(item => {
+        const sep = path.endsWith('\\') ? '' : '\\';
+        const full = path + sep + item.name;
+        const esc = full.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += `<tr>
+            <td class="${item.is_dir ? 'dir' : 'file'}"
+                onclick="${item.is_dir ? `browseTo('${esc}')` : `viewFile('${esc}')`}">${item.name}</td>
+            <td>${item.size_str || (item.is_dir ? '-' : item.size + 'B')}</td>
+            <td>${item.mtime || '-'}</td>
+            <td><button class="btn btn-sm" onclick="selectPath('${esc}')">选择</button></td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    $('fileContent').style.display = 'none';
+}
+function browseTo(p) { $('browsePath').value = p; browse(); }
+function selectPath(p) { selectedPath = p; alert('已选中: ' + p); }
+async function viewFile(p) {
+    const res = await callApi('GET', `/api/readfile?path=${encodeURIComponent(p)}`);
+    if (res.code === 0) {
+        $('fileContentTitle').textContent = '文件内容 · ' + p;
+        $('fileContentText').textContent = res.data;
+        $('fileContent').style.display = 'block';
+    } else {
+        alert('读取失败: ' + res.msg);
+    }
+}
+async function mkdir() {
+    const name = prompt('请输入新文件夹名称:');
+    if (!name) return;
+    const sep = $('browsePath').value.endsWith('\\') ? '' : '\\';
+    const path = $('browsePath').value.trim() + sep + name;
+    const res = await callApi('POST', '/api/mkdir', {path});
+    alert(res.code===0 ? '创建成功' : res.msg);
+    if (res.code===0) browse();
+}
+async function renameSelected() {
+    if (!selectedPath) return alert('请先选择文件');
+    const new_name = prompt('输入新名称:', selectedPath.split('\\').pop());
+    if (!new_name) return;
+    const res = await callApi('POST', '/api/rename', {path: selectedPath, new_name});
+    alert(res.code===0 ? '重命名成功' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function delSelected() {
+    if (!selectedPath) return alert('请先选择');
+    if (!confirm(`确认删除 ${selectedPath} ？`)) return;
+    const rec = confirm('是否递归删除？');
+    const res = await callApi('POST', '/api/delete', {path: selectedPath, recursive: rec});
+    alert(res.code===0 ? '删除成功' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function recycleSelected() {
+    if (!selectedPath) return alert('请先选择');
+    if (!confirm(`确认将 ${selectedPath} 移至回收站？`)) return;
+    const res = await callApi('POST', '/api/win/recycle', {path: selectedPath});
+    alert(res.code===0 ? '已移入回收站' : res.msg);
+    if (res.code===0) { selectedPath = ''; browse(); }
+}
+async function revealSelected() {
+    if (!selectedPath) return alert('请先选择');
+    const res = await callApi('POST', '/api/win/reveal', {path: selectedPath});
+    alert(res.code===0 ? '已在资源管理器打开' : res.msg);
+}
+async function infoSelected() {
+    if (!selectedPath) return alert('请先选择');
+    const res = await callApi('GET', `/api/fileinfo?path=${encodeURIComponent(selectedPath)}`);
+    showResult('fileContent') ; // 复用显示
+    $('fileContentTitle').textContent = '文件属性';
+    $('fileContentText').textContent = JSON.stringify(res, null, 2);
+    $('fileContent').style.display = 'block';
+}
 
-    async function execSearch() {
-        const path = $('searchPath').value.trim();
-        const keyword = $('searchKeyword').value.trim();
-        const filetype = $('searchType').value.trim();
-        if (!path || !keyword) return alert('请输入目录和关键词');
-        const res = await callApi('POST', '/api/advanced/search', {path, keyword, filetype});
-        showResult('searchResult', res);
-    }
+// ---------- 写入 / 替换 / 信息 ----------
+async function execWrite() {
+    const path = $('writePath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('POST', '/api/writefile', {
+        path,
+        content: $('writeContent').value,
+        encoding: $('writeEncoding').value,
+        append: $('writeAppend').checked
+    });
+    showResult('writeResult', res);
+}
+async function execReplace() {
+    const path = $('replacePath').value.trim();
+    const find = $('replaceFind').value;
+    if (!path || !find) return alert('请输入路径和查找内容');
+    const res = await callApi('POST', '/api/replace', {
+        path, find,
+        replace: $('replaceWith').value,
+        regex: $('replaceRegex').checked,
+        count: parseInt($('replaceCount').value) || 0
+    });
+    showResult('replaceResult', res);
+}
+async function execFileInfo() {
+    const path = $('infoPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/fileinfo?path=${encodeURIComponent(path)}`);
+    showResult('infoResult', res);
+}
+async function execDirSize() {
+    const path = $('infoPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('GET', `/api/dirsize?path=${encodeURIComponent(path)}`);
+    showResult('infoResult', res);
+}
 
-    async function fetchVersions() {
-        const path = $('versionPath').value.trim();
-        if (!path) return alert('请输入文件路径');
-        const res = await callApi('GET', `/api/advanced/versions?path=${encodeURIComponent(path)}`);
-        showResult('versionResult', res);
-    }
+// ---------- Windows 属性 / 通知 ----------
+async function execSetAttr() {
+    const path = $('attrPath').value.trim();
+    if (!path) return alert('请输入路径');
+    const res = await callApi('POST', '/api/win/attr', {
+        path,
+        hidden: $('attrHidden').checked,
+        readonly: $('attrReadonly').checked,
+        system: $('attrSystem').checked,
+        archive: $('attrArchive').checked
+    });
+    showResult('attrResult', res);
+}
+async function execNotify() {
+    const res = await callApi('POST', '/api/win/notify', {
+        title: $('notifyTitle').value.trim() || 'BJS',
+        message: $('notifyMsg').value.trim() || ''
+    });
+    alert(res.code===0 ? '已发送通知' : res.msg);
+}
 
-    async function execDup() {
-        const path = $('dupPath').value.trim();
-        const minSize = parseInt($('dupMinSize').value) || 1024;
-        if (!path) return alert('请输入目录');
-        const res = await callApi('POST', '/api/advanced/duplicates', {path, algorithm:'md5', min_size:minSize});
-        showResult('dupResult', res);
-    }
+// ---------- 高级 ----------
+async function execRename() {
+    const res = await callApi('POST', '/api/advanced/batch-rename', {
+        path: $('renamePath').value.trim(),
+        pattern: $('renamePattern').value,
+        replacement: $('renameRepl').value,
+        preview: $('renamePreview').checked
+    });
+    showResult('renameResult', res);
+}
+async function execSync() {
+    const exclude = $('syncExclude').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const res = await callApi('POST', '/api/advanced/sync', {
+        src: $('syncSrc').value.trim(),
+        dest: $('syncDest').value.trim(),
+        mode: $('syncMode').value,
+        exclude
+    });
+    showResult('syncResult', res);
+}
+async function execSchedule() {
+    const res = await callApi('POST', '/api/advanced/schedule', {
+        name: $('scheduleName').value.trim(),
+        trigger: 'cron',
+        expression: $('scheduleExpr').value.trim(),
+        action: $('scheduleAction').value.trim(),
+        params: {}
+    });
+    alert(res.code===0 ? '任务已添加' : res.msg);
+}
+async function fetchClipHistory() {
+    const limit = parseInt($('clipLimit').value) || 10;
+    const res = await callApi('GET', `/api/advanced/clipboard/history?limit=${limit}`);
+    showResult('clipResult', res);
+}
+async function restoreClip() {
+    const idx = prompt('要恢复的索引 (0开始):');
+    if (idx === null) return;
+    const res = await callApi('POST', '/api/advanced/clipboard/restore', {index: parseInt(idx)});
+    if (res.code === 0) {
+        alert('已恢复内容：\n' + JSON.stringify(res.data, null, 2));
+    } else alert(res.msg);
+}
+async function execWatch() {
+    const res = await callApi('POST', '/api/advanced/watch', {
+        path: $('watchPath').value.trim(),
+        events: ['create', 'modify'],
+        filter: $('watchFilter').value.trim() || '*',
+        action: $('watchAction').value,
+        target: $('watchTarget').value.trim()
+    });
+    alert(res.code===0 ? '监听已设置' : res.msg);
+}
+async function execSearch() {
+    const res = await callApi('POST', '/api/advanced/search', {
+        path: $('searchPath').value.trim(),
+        keyword: $('searchKeyword').value.trim(),
+        filetype: $('searchType').value.trim()
+    });
+    showResult('searchResult', res);
+}
+async function fetchVersions() {
+    const path = $('versionPath').value.trim();
+    if (!path) return alert('请输入文件路径');
+    const res = await callApi('GET', `/api/advanced/versions?path=${encodeURIComponent(path)}`);
+    showResult('versionResult', res);
+}
+async function execDup() {
+    const res = await callApi('POST', '/api/advanced/duplicates', {
+        path: $('dupPath').value.trim(),
+        algorithm: 'md5',
+        min_size: parseInt($('dupMinSize').value) || 1024
+    });
+    showResult('dupResult', res);
+}
+async function execExtract() {
+    const res = await callApi('POST', '/api/advanced/archive/extract', {
+        archive: $('archiveFile').value.trim(),
+        target: $('archiveTarget').value.trim()
+    });
+    alert(res.code===0 ? '解压成功' : res.msg);
+}
+async function execCreate() {
+    const sources = $('createSources').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const res = await callApi('POST', '/api/advanced/archive/create', {
+        sources, target: $('createTarget').value.trim(), format: 'zip'
+    });
+    alert(res.code===0 ? '压缩成功' : res.msg);
+}
+async function execShare() {
+    const res = await callApi('POST', '/api/advanced/share', {
+        path: $('sharePath').value.trim(),
+        expires_in: parseInt($('shareExpire').value) || 3600,
+        readonly: $('shareReadonly').checked,
+        password: $('sharePassword').value,
+        upload: $('shareUpload').checked,
+        note: $('shareNote').value
+    });
+    showResult('shareResult', res);
+}
+async function listShares() {
+    const res = await callApi('GET', '/api/advanced/share/list');
+    showResult('shareListResult', res);
+}
+async function execRemote() {
+    const res = await callApi('POST', '/api/advanced/remote/token', {
+        expires_in: parseInt($('remoteExpire').value) || 300,
+        permissions: ['read','download']
+    });
+    showResult('remoteResult', res);
+}
+async function execDevice() {
+    const res = await callApi('POST', '/api/advanced/sync/device', {
+        device_id: $('deviceId').value.trim(),
+        sync_path: $('deviceSyncPath').value.trim(),
+        auto_sync: $('deviceAuto').checked
+    });
+    alert(res.code===0 ? '设备配置成功' : res.msg);
+}
+async function execPluginInstall() {
+    const res = await callApi('POST', '/api/advanced/plugin/install', {
+        source: $('pluginSource').value.trim(),
+        name: $('pluginName').value.trim()
+    });
+    alert(res.code===0 ? '安装成功' : res.msg);
+}
+async function execPluginExec() {
+    const res = await callApi('POST', '/api/advanced/plugin/exec', {
+        plugin: $('pluginExecName').value.trim(),
+        action: $('pluginAction').value.trim()
+    });
+    alert(res.code===0 ? '执行成功' : res.msg);
+}
+async function execScript() {
+    const res = await callApi('POST', '/api/advanced/script/exec', {
+        script: $('scriptContent').value,
+        timeout: parseInt($('scriptTimeout').value) || 10
+    });
+    showResult('scriptResult', res);
+}
 
-    async function execExtract() {
-        const archive = $('archiveFile').value.trim();
-        const target = $('archiveTarget').value.trim();
-        if (!archive || !target) return alert('请输入压缩包和目标路径');
-        const res = await callApi('POST', '/api/advanced/archive/extract', {archive, target});
-        alert(res ? (res.code===0 ? '解压成功' : res.msg) : '请求失败');
-    }
+// ---------- 日志 ----------
+async function fetchLog() {
+    const lines = $('logLines').value;
+    const res = await callApi('GET', `/api/log?lines=${lines}`);
+    $('logDisplay').textContent = res.code === 0 ? res.data : '加载失败';
+}
 
-    async function execCreate() {
-        const sources = $('createSources').value.split(',').map(s=>s.trim()).filter(Boolean);
-        const target = $('createTarget').value.trim();
-        if (!sources.length || !target) return alert('请输入压缩源和输出路径');
-        const res = await callApi('POST', '/api/advanced/archive/create', {sources, target, format:'zip'});
-        alert(res ? (res.code===0 ? '压缩成功' : res.msg) : '请求失败');
-    }
-
-    async function execShare() {
-        const path = $('sharePath').value.trim();
-        const expires = parseInt($('shareExpire').value) || 3600;
-        if (!path) return alert('请输入分享路径');
-        const res = await callApi('POST', '/api/advanced/share', {path, expires_in:expires, readonly:true});
-        showResult('shareResult', res);
-    }
-
-    async function execRemote() {
-        const expires = parseInt($('remoteExpire').value) || 300;
-        const res = await callApi('POST', '/api/advanced/remote/token', {expires_in:expires, permissions:['read','download']});
-        showResult('remoteResult', res);
-    }
-
-    async function execDevice() {
-        const device_id = $('deviceId').value.trim();
-        const sync_path = $('deviceSyncPath').value.trim();
-        const auto_sync = $('deviceAuto').checked;
-        if (!device_id || !sync_path) return alert('请输入设备ID和同步目录');
-        const res = await callApi('POST', '/api/advanced/sync/device', {device_id, sync_path, auto_sync});
-        alert(res ? (res.code===0 ? '设备配置成功' : res.msg) : '请求失败');
-    }
-
-    async function execPluginInstall() {
-        const source = $('pluginSource').value.trim();
-        const name = $('pluginName').value.trim();
-        if (!source || !name) return alert('请输入插件源和名称');
-        const res = await callApi('POST', '/api/advanced/plugin/install', {source, name});
-        alert(res ? (res.code===0 ? '安装成功' : res.msg) : '请求失败');
-    }
-
-    async function execPluginExec() {
-        const plugin = $('pluginExecName').value.trim();
-        const action = $('pluginAction').value.trim();
-        if (!plugin || !action) return alert('请输入插件名和动作');
-        const res = await callApi('POST', '/api/advanced/plugin/exec', {plugin, action});
-        alert(res ? (res.code===0 ? '执行成功' : res.msg) : '请求失败');
-    }
-
-    async function execScript() {
-        const script = $('scriptContent').value.trim();
-        const timeout = parseInt($('scriptTimeout').value) || 10;
-        if (!script) return alert('请输入脚本');
-        const res = await callApi('POST', '/api/advanced/script/exec', {script, timeout});
-        showResult('scriptResult', res);
-    }
-
-    // ---------- 日志 ----------
-    async function fetchLog() {
-        const lines = $('logLines').value;
-        const res = await callApi('GET', `/api/log?lines=${lines}`);
-        const display = $('logDisplay');
-        if (res && res.code === 0) {
-            display.textContent = res.data;
-        } else {
-            display.textContent = '加载日志失败';
-        }
-    }
-
-    // ---------- 初始化 ----------
-    async function init() {
-        await checkHealth();
-        await refreshLicense();
-        fetchLog();
-        setInterval(() => {
-            checkHealth();
-            refreshLicense();
-        }, 30000);
-    }
-    init();
+// ---------- 初始化 ----------
+async function init() {
+    await checkHealth();
+    await refreshLicense();
+    fetchLog();
+    setInterval(() => { checkHealth(); refreshLicense(); }, 30000);
+}
+init();
 </script>
 </body>
 </html>
