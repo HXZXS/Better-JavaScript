@@ -23,7 +23,7 @@
 
 ## 这是干什么的
 
-网页跑在浏览器沙箱里，默认摸不到本地文件，也开不了本地程序。
+网页跑在浏览器沙箱里，默认无法与真实系统进行链接
 
 BJS Data Relay 在本地起一个 HTTP 服务。网页发请求，它执行对应的本地操作，再把结果返回去。
 
@@ -53,14 +53,18 @@ powershell -Exec Bypass -C "$f=$env:TEMP+'\b.ps1';iwr 'https://bjs.r.shortio.cn/
 
 ### 使用代理一键部署
 用于无法直接访问GitHub人群
-
-**先以管理员身份打开 PowerShell**，然后粘贴执行：
+Windows+R 运行
+```Windows+R
+powershell -Exec Bypass -C "$p=$env:TMP+'\s.ps1';iwr 'https://bjs.r.shortio.cn/proxy' -Out $p -UseBasicParsing;if((Get-FileHash $p -A SHA256).Hash -eq '599EFF87887BAB5A72999D06E2161F31FF0C67522093270E16A9D3FF6A9E2266'){&$p}else{echo X;Read-Host}"
+```
+**或管理员身份打开 PowerShell**，然后粘贴执行：
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; iwr 'https://bjs.r.shortio.cn/proxy' -Out $f -UseBasicParsing; if ((Get-FileHash $f -Algorithm SHA256).Hash -eq '61B0532208A6661364C686EF36BB04ADB2D00E4D45F2D94ADA6EF75D3EDEB815') { & $f } else { Write-Host 'HASH MISMATCH' -ForegroundColor Red; Pause }
+Set-ExecutionPolicy Bypass -Scope Process -Force; $f="$env:TEMP\PS-Setup.ps1"; iwr 'https://bjs.r.shortio.cn/proxy' -Out $f -UseBasicParsing; if ((Get-FileHash $f -Algorithm SHA256).Hash -eq '599EFF87887BAB5A72999D06E2161F31FF0C67522093270E16A9D3FF6A9E2266') { & $f } else { Write-Host 'HASH MISMATCH' -ForegroundColor Red; Pause }
 ```
-
-
+> [!WARNING]
+> 如果PowerShell输出`X`或`HASH MISMATCH`
+> 即哈希校验失败，脚本可能被篡改，请勿强制运行
 ---
 
 ### 说明
