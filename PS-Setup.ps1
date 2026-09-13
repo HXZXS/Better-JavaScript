@@ -1,5 +1,5 @@
-﻿$AppName     = 'Better-JavaScript-DataRelay'
-$ProcessName = 'Better JavaScript DataRelay'
+$AppName     = 'Better-JavaScript-DataRelay'
+$ProcessNames = @('Better JavaScript DataRelay', 'BJS developer key')
 $InstallerName = 'BJS_Setup.exe'
 $InstallDir  = 'C:\Program Files\Better-JavaScript-DataRelay'
 $ExeName     = 'Better JavaScript DataRelay.exe'
@@ -24,11 +24,11 @@ function Test-Admin {
     return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-
-if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $newProcess = Start-Process powershell -Verb RunAs -ArgumentList "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -PassThru
-    Stop-Process -Id $PID -Force
-    exit
+# ========== 提权 ==========
+if (-not (Test-Admin)) {
+    $argList = "-NoExit -NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    Start-Process powershell -Verb RunAs -ArgumentList $argList
+    [Environment]::Exit(0)
 }
 
 $Host.UI.RawUI.WindowTitle = "$AppName Automatic Installer"
@@ -81,10 +81,6 @@ function Write-Rainbow {
     Write-Host "${E}[0m"
 }
 
-function Write-Tag {
-    param([string]$Tag, [string]$Text, [int]$TagColor = 51)
-    Write-Host "  ${E}[48;5;${TagColor}m${E}[30m $Tag ${E}[0m ${E}[97m$Text${E}[0m"
-}
 function Write-Ok   { param([string]$T) Write-Host "  ${E}[48;5;46m${E}[30m  OK  ${E}[0m ${E}[92m$T${E}[0m" }
 function Write-Warn { param([string]$T) Write-Host "  ${E}[48;5;226m${E}[30m WARN ${E}[0m ${E}[93m$T${E}[0m" }
 function Write-Err  { param([string]$T) Write-Host "  ${E}[48;5;196m${E}[97m FAIL ${E}[0m ${E}[91m$T${E}[0m" }
@@ -92,7 +88,7 @@ function Write-Info { param([string]$T) Write-Host "  ${E}[48;5;39m${E}[97m INFO
 function Write-Step { param([string]$T) Write-Host ''; Write-Host "  ${E}[1;38;5;213m>> $T${E}[0m" }
 
 function Show-Progress {
-    param([double]$Percent)
+    param([double]$Percent, [string]$Label = '')
     $width = 100
     $filled = [int][math]::Round($Percent)
     if ($filled -gt $width) { $filled = $width }
@@ -115,6 +111,10 @@ function Show-Progress {
     [void]$sb.Append("${E}[1;38;5;226m")
     [void]$sb.Append($Percent.ToString('F1'))
     [void]$sb.Append("${E}[0m${E}[97m/100${E}[0m")
+
+    if ($Label) {
+        [void]$sb.Append("  ${E}[38;5;245m$Label${E}[0m")
+    }
 
     [Console]::Write($sb.ToString())
 }
@@ -151,37 +151,59 @@ function Show-Banner {
     Write-Host "  ${E}[${bannerBg}m$blank${E}[0m"
 }
 
+function Show-ProcessList {
+    param($List)
+    foreach ($p in $List) {
+        $name = $p.ProcessName
+        $pid  = $p.Id
+        $mem  = try { [math]::Round($p.WorkingSet64 / 1MB, 1) } catch { 0 }
+        Write-Host "         ${E}[38;5;245mPID${E}[0m ${E}[1;38;5;226m$pid${E}[0m  ${E}[38;5;117m$name${E}[0m  ${E}[38;5;240m($mem MB)${E}[0m"
+    }
+}
+
+# ============================================================
+#  横幅
+# ============================================================
 Clear-Host
 Write-Host ''
 Show-Banner -Title $AppName -Subtitle 'Automatic Installer  /  自动安装程序'
 Write-Host ''
 
-# ---- Step 1: 进程检查 ----
+# ============================================================
+#  Step 1: 进程检查
+# ============================================================
 Write-Step 'Step 1/4  Checking running processes  /  检查运行中的程序'
 
-$targets = @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue)
+$targets = @()
+foreach ($name in $ProcessNames) {
+    $targets += @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+}
+
 if ($targets.Count -eq 0) {
-    $alt = Get-Process -ErrorAction SilentlyContinue | Where-Object {
-        $_.Path -and $_.Path -like "*Better-JavaScript*"
-    }
-    $targets = @($alt)
+    $targets = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.Path -and ($_.Path -like '*Better-JavaScript*' -or $_.Path -like '*BJS developer key*')
+    })
 }
 
 if ($targets.Count -gt 0) {
     Write-Warn "Found $($targets.Count) running process(es) / 发现 $($targets.Count) 个运行中的进程"
-    foreach ($p in $targets) {
-        Write-Host "         PID $($p.Id)  $($p.ProcessName)" -ForegroundColor DarkGray
-    }
+    Show-ProcessList -List $targets
+
     foreach ($p in $targets) {
         try {
             Stop-Process -Id $p.Id -Force -ErrorAction Stop
-            Write-Ok "Stopped PID $($p.Id) / 已结束进程 PID $($p.Id)"
+            Write-Ok "Stopped PID $($p.Id)  [$($p.ProcessName)]"
         } catch {
-            Write-Err "Failed to stop PID $($p.Id) / 结束失败：$($_.Exception.Message)"
+            Write-Err "Failed to stop PID $($p.Id) / 结束失败: $($_.Exception.Message)"
         }
     }
+
     Start-Sleep -Milliseconds 800
-    $left = @(Get-Process -Name $ProcessName -ErrorAction SilentlyContinue)
+
+    $left = @()
+    foreach ($name in $ProcessNames) {
+        $left += @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+    }
     if ($left.Count -gt 0) {
         Write-Err 'Process still running, aborting / 进程仍然存在，已中止'
         Read-Host 'Press Enter to exit / 按回车退出'
@@ -191,7 +213,9 @@ if ($targets.Count -gt 0) {
     Write-Ok 'No running process / 没有运行中的程序'
 }
 
-# ---- Step 2: 下载 ----
+# ============================================================
+#  Step 2: 下载
+# ============================================================
 Write-Step 'Step 2/4  Downloading installer  /  下载安装包'
 
 $tmpPath = Join-Path $env:TEMP $InstallerName
@@ -201,8 +225,9 @@ $index = 0
 
 foreach ($url in $DownloadUrls) {
     $index++
+    $host_ = ([System.Uri]$url).Host
     try {
-        Write-Info "[$index/$total] Source / 来源: $url"
+        Write-Info "[$index/$total] $host_"
 
         $req = [System.Net.HttpWebRequest]::Create($url)
         $req.UserAgent = $UserAgent
@@ -225,7 +250,7 @@ foreach ($url in $DownloadUrls) {
             if ($totalBytes -gt 0) {
                 $percent = [math]::Round(($received / $totalBytes) * 100, 1)
                 if ($percent -ne $lastPercent) {
-                    Show-Progress -Percent $percent
+                    Show-Progress -Percent $percent -Label $host_
                     $lastPercent = $percent
                 }
             }
@@ -239,7 +264,7 @@ foreach ($url in $DownloadUrls) {
             Write-Ok 'Hash verified / 哈希校验通过'
             break
         } else {
-            Write-Warn "Hash mismatch / 哈希不匹配: $hash"
+            Write-Warn "Hash mismatch / 哈希不匹配"
             Remove-Item $tmpPath -Force -ErrorAction SilentlyContinue
         }
     }
@@ -257,16 +282,18 @@ if (-not $downloaded) {
 }
 
 $sizeMB = [math]::Round((Get-Item $tmpPath).Length / 1MB, 2)
-Write-Ok "Downloaded / 下载完成: $tmpPath ($sizeMB MB)"
+Write-Ok "Downloaded / 下载完成: $sizeMB MB"
 
-# ---- Step 3: 安装 ----
+# ============================================================
+#  Step 3: 安装
+# ============================================================
 Write-Step 'Step 3/4  Installing  /  正在安装'
 
 try {
     $installArgs = @('/SILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$InstallDir`"")
     $proc = Start-Process -FilePath $tmpPath -ArgumentList $installArgs -Wait -PassThru
     if ($proc.ExitCode -ne 0) {
-        throw "Installer returned non-zero exit code: $($proc.ExitCode) / 安装程序返回非零退出码：$($proc.ExitCode)"
+        throw "ExitCode $($proc.ExitCode)"
     }
     Write-Ok 'Installation complete / 安装完成'
 }
@@ -279,14 +306,16 @@ finally {
     if (Test-Path $tmpPath) { Remove-Item $tmpPath -Force -ErrorAction SilentlyContinue }
 }
 
-# ---- Step 4: 验证 ----
+# ============================================================
+#  Step 4: 验证 & 收尾
+# ============================================================
 Write-Step 'Step 4/4  Verifying & finalizing  /  验证与收尾'
 
 $exePath = Join-Path $InstallDir $ExeName
 if (Test-Path $exePath) {
-    Write-Ok "Main executable found / 已找到主程序: $exePath"
+    Write-Ok "Main executable found / 已找到主程序"
 } else {
-    Write-Warn "Main executable not found / 未找到主程序: $exePath"
+    Write-Warn "Main executable not found / 未找到主程序"
 }
 
 if ($LaunchAfterInstall -and (Test-Path $exePath)) {
@@ -298,4 +327,4 @@ Write-Host ''
 Show-Banner -Title 'All done!' -Subtitle 'Installation completed  /  安装全部完成'
 Write-Host ''
 
-Read-Host 'OK'
+Read-Host 'Press Enter to exit / 按回车退出'
